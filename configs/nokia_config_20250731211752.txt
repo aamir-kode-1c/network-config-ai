@@ -1,0 +1,1 @@
+Nokia Config Generated: {'interface': 'ge-0/0/1', 'ip': '192.168.1.10', 'subnet': '255.255.255.0', 'description': 'Branch office WAN', 'admin_state': 'down'}
