@@ -1,0 +1,1 @@
+Openet Config Generated: {'interface': 'eth2', 'ip': '172.16.0.1', 'subnet': '255.255.0.0', 'description': 'Openet test config', 'admin_state': 'up'}
