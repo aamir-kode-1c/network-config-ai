@@ -1,0 +1,5 @@
+interface eth1
+  address 10.20.30.40/24
+  description "Policy link 2"
+  admin-state down
+exit
