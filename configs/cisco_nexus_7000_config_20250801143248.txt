@@ -1,0 +1,5 @@
+interface test
+  no shutdown
+  ip address 1.1.1.1 24
+  description 'test'
+exit
