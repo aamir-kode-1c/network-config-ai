@@ -1,0 +1,3 @@
+vns interface test
+  address 1.1.1.1/24
+exit
