@@ -1,0 +1,3 @@
+interface GigabitEthernet0/0
+ description Generate JSON config for Cisco ASR 9000
+exit
