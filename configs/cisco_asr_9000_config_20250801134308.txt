@@ -1,0 +1,6 @@
+interface GigabitEthernet0/1 {
+  ip-address 172.16.0.1;
+  subnet 255.255.255.0;
+  description 'WAN Edge OLD';
+  admin-state down;
+}
