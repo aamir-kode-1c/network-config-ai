@@ -1,0 +1,4 @@
+minilink-if test
+  ip 1.1.1.1/24
+  note 'test'
+end
