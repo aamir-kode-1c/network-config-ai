@@ -1,0 +1,3 @@
+configure router interface eth0
+  address 10.0.0.1/24
+exit
