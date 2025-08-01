@@ -1,0 +1,7 @@
+{
+  "interface": "GigabitEthernet0/0",
+  "ip": "192.168.100.1",
+  "subnet": "255.255.255.0",
+  "description": "Uplink to ISP",
+  "admin_state": "up"
+}
