@@ -1,0 +1,4 @@
+interface eth0
+  address 0.0.0.0/24
+  description "nokia test config"
+exit
