@@ -1,0 +1,5 @@
+openet-interface eth1
+  ip 10.20.30.40/24
+  note "Policy link 1"
+  state up
+end
