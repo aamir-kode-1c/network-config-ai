@@ -1,0 +1,1 @@
+<ericsson-interface name="ge-0/0/3"><ip>192.168.10.3</ip><subnet>24</subnet><description>Branch WAN 2</description></ericsson-interface>
