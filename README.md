@@ -37,3 +37,4 @@ graph TD
     F -->|10. Return Push Status/Output| B
     B -->|11. Show Output to User| A
     D -->|12. Commit Config (GitOps)| H[Git Repo]
+```
