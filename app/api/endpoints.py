@@ -52,14 +52,14 @@ def run_agentic_update(request: Request):
         return JSONResponse({"status": "Agentic update failed.", "error": e.stderr}, status_code=500)
 
 @router.post("/push-to-sim")
-def push_to_sim(request: Request):
+async def push_to_sim(request: Request):
     import json
     import socket
     try:
-        data = request.json() if hasattr(request, 'json') else None
+        data = await request.json()
     except Exception:
         try:
-            body = request.body() if hasattr(request, 'body') else None
+            body = await request.body()
             data = json.loads(body.decode()) if body else None
         except Exception:
             data = None

@@ -1,0 +1,5 @@
+interface GigabitEthernet0/1/1/1
+ ip address 192.2.2.11 255.255.255.0
+ description Uplink to Core Router 40
+ no shutdown
+exit

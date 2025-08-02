@@ -159,6 +159,8 @@ document.addEventListener("DOMContentLoaded", function() {
             if (data.config) {
                 document.getElementById('generated-config-block').style.display = 'block';
                 document.getElementById('generated-config').innerText = data.config;
+                // Always attach handler after block is shown
+                document.getElementById('sim-push-btn').onclick = pushToSimDevice;
                 showFeedback("#form-feedback", "Config generated successfully.", false);
             } else {
                 showFeedback("#form-feedback", data.detail || "Failed to generate config.", true);
@@ -243,6 +245,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     document.getElementById("history-vendor").textContent = document.getElementById("vendor").options[0]?.text || "";
+    document.getElementById('sim-push-btn').addEventListener('click', pushToSimDevice);
     // Optionally, fetch and render config history here
 });
 
@@ -259,6 +262,7 @@ function triggerAgenticUpdate() {
 }
 
 function pushToSimDevice() {
+    console.log("Push to Device button clicked");
     clearFeedback();
     const config = document.getElementById('generated-config').innerText;
     const device = document.getElementById('sbi-device').value;
@@ -270,13 +274,16 @@ function pushToSimDevice() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: config, device: device })
     })
-    .then(r => r.json())
-    .then(data => {
-        document.getElementById('sim-push-status').innerText = data.status || 'Done';
-        if (data.output) {
-            document.getElementById('sim-push-result').style.display = 'block';
-            document.getElementById('sim-push-result').innerText = data.output;
+    .then(async r => {
+        let data;
+        try {
+            data = await r.json();
+        } catch (err) {
+            data = { status: 'Invalid response', output: '' };
         }
+        document.getElementById('sim-push-status').innerText = data.status || data.error || 'Done';
+        document.getElementById('sim-push-result').style.display = 'block';
+        document.getElementById('sim-push-result').innerText = data.output || data.error || JSON.stringify(data);
     })
     .catch(e => {
         document.getElementById('sim-push-status').innerText = 'Error';
