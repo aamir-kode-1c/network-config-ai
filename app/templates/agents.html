@@ -43,6 +43,44 @@
         </tbody>
     </table>
 
+    <h2>NBI Payload Generator</h2>
+    <form id="nbi-generator-form" autocomplete="off">
+        <div class="form-group">
+            <label for="nbi-vendor">Vendor:</label>
+            <select name="nbi-vendor" id="nbi-vendor" required>
+                <option value="cisco">Cisco</option>
+                <option value="nokia">Nokia</option>
+                <option value="ericsson">Ericsson</option>
+                <option value="huawei">Huawei</option>
+                <option value="openet">Openet</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="nbi-product">Product:</label>
+            <input name="nbi-product" id="nbi-product" placeholder="e.g. ASR 9000" required />
+        </div>
+        <div class="form-group">
+            <label for="nbi-format">Config Format:</label>
+            <select name="nbi-format" id="nbi-format" required>
+                <option value="cli">CLI</option>
+                <option value="json">JSON</option>
+                <option value="xml">XML</option>
+                <option value="yang">YANG</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="nbi-payload">NB API Payload (JSON):</label>
+            <textarea name="nbi-payload" id="nbi-payload" rows="6" required placeholder='{"interface": "GigabitEthernet0/2/0/1", "ip": "192.168.50.1", ...}'></textarea>
+        </div>
+        <button type="submit">Generate Config</button>
+        <div id="nbi-generator-feedback" class="feedback" style="display:none;"></div>
+    </form>
+    <div id="nbi-config-block" style="display:none;">
+        <label for="nbi-generated-config">Generated Config:</label>
+        <textarea id="nbi-generated-config" rows="6" readonly></textarea>
+        <button id="copy-nbi-config" type="button">Copy to Push Form</button>
+    </div>
+
     <h2>Push Config to Physical Hardware</h2>
     <form id="push-agent-form" autocomplete="off">
         <div class="form-group">
