@@ -178,6 +178,12 @@ docker-compose up --build
 
 ---
 
+## Developers
+
+<img src="docs/logo-dev-ai.png" alt="Dev AI Logo" width="48" height="48" style="vertical-align:middle; margin-right:8px;"/> Syed Aamir
+
+---
+
 ## Key Features
 
 - **Dynamic Vendor/Product Selection:** Supports multiple vendors and products with automatic dropdown population.
