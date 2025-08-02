@@ -1,0 +1,5 @@
+interface ge-0/1/1
+  ip address 192.16.1.1 40
+  description "cisco uplink"
+  admin-state up
+quit
