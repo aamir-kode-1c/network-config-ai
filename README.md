@@ -26,15 +26,14 @@ This project is a production-ready, extensible, multi-vendor network configurati
 ```mermaid
 graph TD
     A[User: Dashboard UI] -->|1. Select Vendor/Product, Enter Payload| B
-    B[Frontend JS] -->|2. Fetch /api/vendor-products| C
-    B -->|3. Submit /generate-config| D
+    B[Frontend JS] -->|2. Fetch api_vendor_products| C
+    B -->|3. Submit generate_config| D
     D[FastAPI Backend] -->|4. Generate Config| E
     E[Vendor Generators] -->|5. Return Config| D
     D -->|6. Return Config to UI| B
-    B -->|7. Push to Device (POST /push-to-sim)| F
-    F[FastAPI Backend] -->|8. Connect to Simulator (Socket)| G
+    B -->|7. Push to Device| F
+    F[FastAPI Backend] -->|8. Connect to Simulator| G
     G[Vendor Simulator] -->|9. Receive CLI Commands| G
     F -->|10. Return Push Status/Output| B
     B -->|11. Show Output to User| A
     D -->|12. Commit Config (GitOps)| H[Git Repo]
-```
