@@ -93,6 +93,91 @@ graph TD
 
 ---
 
+## Example Screenshots
+
+> _Replace the image URLs below with actual screenshots from your deployment._
+
+**Dashboard - NBI Payload Generator and Agentic Push**
+
+![Dashboard Screenshot](docs/screenshots/dashboard.png)
+
+**Agent Registration and Status Table**
+
+![Agents Screenshot](docs/screenshots/agents.png)
+
+---
+
+## More Deployment Instructions
+
+### 1. Docker Compose (Recommended)
+
+- Build and start all services (orchestrator and agents):
+  ```bash
+  docker-compose up --build
+  ```
+- Visit [http://localhost:8000](http://localhost:8000) for the dashboard.
+- Agents will be available on ports 5001 (Nokia), 5003 (Cisco), 5004 (Ericsson), 5005 (Openet).
+
+### 2. Standalone (Dev/Test)
+
+- Install dependencies:
+  ```bash
+  pip install -r requirements.txt
+  ```
+- Start the orchestrator:
+  ```bash
+  uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+  ```
+- Start agents (in separate terminals):
+  ```bash
+  python agents/agent_cisco_ssh.py
+  python agents/agent_nokia_ssh.py
+  # ...etc.
+  ```
+
+### 3. Production Best Practices
+- Use HTTPS and secure credentials.
+- Protect dashboard and API with authentication.
+- Use Docker or Kubernetes for orchestration.
+- Monitor logs and agent health.
+
+---
+
+## API Endpoint Documentation
+
+### Orchestrator API
+
+- `GET /api/vendor-products` — List available vendor/product pairs
+- `POST /generate-config` — Generate vendor-specific config from NB API payload
+- `POST /api/agents/register` — Register a new agent endpoint
+- `GET /api/agents/list` — List all registered agents
+- `POST /api/agents/push` — Push config to a registered agent
+
+### Agent API (per vendor)
+
+- `POST /push-config` — Receive and apply config to device (SSH, NETCONF, etc.)
+  - Example payload:
+    ```json
+    {
+      "config": "<CLI or XML config>",
+      "token": "<optional>"
+    }
+    ```
+
+---
+
+## Docker Compose Quickstart
+
+```bash
+git clone https://github.com/aamir-kode-1c/network-config-ai.git
+cd network-config-ai
+docker-compose up --build
+```
+- Visit [http://localhost:8000](http://localhost:8000) to use the dashboard.
+- Agents are available on their respective ports.
+
+---
+
 ## Key Features
 
 - **Dynamic Vendor/Product Selection:** Supports multiple vendors and products with automatic dropdown population.
