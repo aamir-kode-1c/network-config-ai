@@ -1,0 +1,7 @@
+interface GigabitEthernet0/0/1
+  ip address 192.16.1.1 255.255.255.0
+  description Huawei uplink
+  mtu 1500
+  vrf-binding default
+  undo shutdown
+quit
