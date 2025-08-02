@@ -1,0 +1,4 @@
+openet-interface ethX
+  ip 0.0.0.0/24
+  note "Generate JSON config for Cisco ASR 9000"
+end
