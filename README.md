@@ -166,6 +166,25 @@ graph TD
 
 ---
 
+## API Testing with Swagger (OpenAPI UI)
+
+This project includes an interactive API documentation and testing tool using **Swagger UI** (powered by FastAPI/OpenAPI).
+
+- **How to Access:**
+  - When the backend is running, go to [http://localhost:8000/docs](http://localhost:8000/docs) in your browser.
+- **What You Can Do:**
+  - Explore all available API endpoints and their request/response schemas.
+  - Try out API calls directly from the browser (no need for curl/Postman).
+  - See sample payloads, required fields, and error messages in real time.
+- **Why Use Swagger?**
+  - Great for developers, testers, and integrators to quickly validate and experiment with the API.
+  - Ensures your API is self-documenting and always up to date.
+
+
+For advanced usage, you can also access the raw OpenAPI JSON at `/openapi.json`.
+![alt text](image-2.png)
+---
+
 ## Docker Compose Quickstart
 
 ```bash
@@ -178,11 +197,7 @@ docker-compose up --build
 
 ---
 
-## Developers
 
-<img src="docs/logo-dev-ai.png" alt="Dev AI Logo" width="48" height="48" style="vertical-align:middle; margin-right:8px;"/> Syed Aamir
-
----
 
 ## Key Features
 
@@ -211,3 +226,9 @@ graph TD
     B -->|11. Show Output to User| A
     D -->|12. Commit Config GitOps| H[Git Repo]
 ```
+
+## Developers
+
+<img src="docs/logo-dev-ai.png" alt="Dev AI Logo" width="48" height="48" style="vertical-align:middle; margin-right:8px;"/> Syed Aamir
+
+---
