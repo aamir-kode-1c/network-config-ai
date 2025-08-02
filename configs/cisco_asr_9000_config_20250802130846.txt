@@ -1,0 +1,5 @@
+interface GigabitEthernet0/1/1/1
+  ip address 192.1.2.11 255.255.255.0
+  description 'Uplink to Core Router 200'
+  no shutdown
+exit
