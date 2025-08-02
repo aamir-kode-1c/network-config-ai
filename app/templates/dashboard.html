@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="/static/dashboard.css">
 </head>
 <body>
+    <nav style="position:absolute;top:16px;right:24px;font-size:17px;">
+        <a href="/agents" style="color:#1976d2;text-decoration:none;font-weight:bold;">Agentic AI Device Connectors</a>
+    </nav>
     <div class="container">
         <h1>AI-Based Config Manager Dashboard</h1>
         <form id="configForm" autocomplete="off">
@@ -50,8 +53,7 @@
             <div id="form-loading" class="loading" style="display:none;">Loading...</div>
         </form>
         <div id="output">
-            <button id="agentic-update-btn" type="button">Run Agentic Update</button>
-            <span id="agentic-update-status" style="margin-left:10px;"></span>
+            
             <div id="generated-config-block" style="display:none;">
                 <h2>Generated Config</h2>
                 <pre id="generated-config"></pre>
@@ -67,42 +69,7 @@
             </div>
             <div id="output-error" class="feedback error" style="display:none;"></div>
         </div>
-        <div id="history-panel">
-            <h2>Config History ({{ selected_vendor|capitalize }})</h2>
-            {% if history and history|length > 0 %}
-                <table style="width:100%;border-collapse:collapse;">
-                    <thead>
-                        <tr>
-                            <th>Commit</th>
-                            <th>Timestamp</th>
-                            <th>Description</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in history %}
-                        <tr>
-                            <td style="font-family:monospace;">{{ entry.commit[:7] }}</td>
-                            <td>{{ entry.timestamp }}</td>
-                            <td>{{ entry.message }}</td>
-                            <td>
-                                <form style="display:inline;" method="post" action="/dashboard">
-                                    <input type="hidden" name="vendor" value="{{ selected_vendor }}"/>
-                                    <input type="hidden" name="nb_payload" value="{}"/>
-                                    <input type="hidden" name="description" value="Rollback to commit {{ entry.commit[:7] }}"/>
-                                    <button type="submit" formaction="/dashboard/rollback/{{ entry.commit }}">Rollback</button>
-                                </form>
-                                <button type="button">View</button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>No config history found for this vendor.</p>
-            {% endif %}
-            <div id="viewed-config" style="margin-top:16px;"></div>
-        </div>
+        
     </div>
     
     

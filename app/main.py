@@ -26,6 +26,9 @@ app.include_router(endpoints.router)
 app.include_router(history_router)
 app.include_router(agents_router)
 
+from fastapi.responses import JSONResponse
+
+
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})

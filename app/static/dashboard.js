@@ -254,17 +254,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Optionally, fetch and render config history here
 });
 
-function triggerAgenticUpdate() {
-    document.getElementById('agentic-update-status').innerText = 'Running...';
-    fetch('/run-agentic-update', {method: 'POST'})
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById('agentic-update-status').innerText = data.status || 'Done';
-        })
-        .catch(e => {
-            document.getElementById('agentic-update-status').innerText = 'Error';
-        });
-}
+
 
 function pushToSimDevice() {
     console.log("Push to Device button clicked");
