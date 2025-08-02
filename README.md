@@ -99,11 +99,11 @@ graph TD
 
 **Dashboard - NBI Payload Generator and Agentic Push**
 
-![Dashboard Screenshot](docs/screenshots/dashboard.png)
+![Dashboard Screenshot](![alt text](image.png))
 
 **Agent Registration and Status Table**
 
-![Agents Screenshot](docs/screenshots/agents.png)
+![Agents Screenshot](![alt text](image-1.png))
 
 ---
 
