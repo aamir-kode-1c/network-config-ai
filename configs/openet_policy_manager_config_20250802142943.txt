@@ -1,0 +1,5 @@
+pm-if ge-0/1/1
+  ip 12.16.1.1/40
+  description 'opennet uplink'
+  state up
+end

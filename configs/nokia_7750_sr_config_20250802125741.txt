@@ -1,5 +1,0 @@
-configure router interface GigabitEthernet0/0/1/1
-  address 192.1.2.11/255.255.255.0
-  description "Uplink to Core Router 2"
-  admin-state up
-exit

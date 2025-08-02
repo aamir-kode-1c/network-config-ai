@@ -1,2 +1,0 @@
-# TODO: Implement CLI for NE40E
-# Add config lines here

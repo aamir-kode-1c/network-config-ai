@@ -14,16 +14,25 @@ def generate(nb_payload: dict, format: str = 'cli', product: str = None) -> str:
         # Product-specific CLI simulation for Huawei
         if product in ['CloudEngine S Series', 'AR G3', 'NE40E']:
             lines = [
-                "system-view",
-                f"interface {nb_payload.get('interface', 'GigabitEthernet0/0/1')}",
-                f"  ip address {nb_payload.get('ip', '0.0.0.0')} {nb_payload.get('subnet', '255.255.255.0')}",
+                # Add standard Huawei CLI config lines here, e.g.:
+                f"interface {nb_payload.get('interface', 'GigabitEthernet0/0/0')}"
             ]
+            if nb_payload.get('ip') and nb_payload.get('subnet'):
+                lines.append(f"  ip address {nb_payload['ip']} {nb_payload['subnet']}")
             if nb_payload.get('description'):
                 lines.append(f"  description {nb_payload['description']}")
+            if nb_payload.get('mtu'):
+                lines.append(f"  mtu {nb_payload['mtu']}")
+            if nb_payload.get('vrf'):
+                lines.append(f"  vrf-binding {nb_payload['vrf']}")
             if nb_payload.get('admin_state'):
-                lines.append("  shutdown" if nb_payload['admin_state'] == 'down' else "  undo shutdown")
+                lines.append(f"  shutdown" if nb_payload['admin_state'] == 'down' else "  undo shutdown")
+            # Add any additional fields not already handled
+            handled_keys = {'interface','ip','subnet','description','mtu','vrf','admin_state','shutdown'}
+            for k, v in nb_payload.items():
+                if k not in handled_keys:
+                    lines.append(f"  {k} {v}")
             lines.append("quit")
-            lines.append("return")
             return '\n'.join(lines)
         # Default fallback for unknown or generic Huawei products
         lines = [

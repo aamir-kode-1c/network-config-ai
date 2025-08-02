@@ -1,5 +1,0 @@
-pm-if test
-  ip 1.1.1.1/24
-  description 'test'
-  state up
-end

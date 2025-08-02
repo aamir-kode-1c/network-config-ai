@@ -1,1 +1,0 @@
-Nokia Config Generated: {'vendor': 'nokia', 'nb_payload': {'interface': 'eth0', 'ip': '10.10.10.1'}, 'description': 'Test config'}

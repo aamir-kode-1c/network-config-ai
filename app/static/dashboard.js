@@ -5,13 +5,18 @@ console.log("dashboard.js loaded");
 let vendorProducts = {};
 let sbiDevices = {
     nokia: [
+        { value: "nokia_7750sr_ssh", label: "Nokia 7750 SR (SSH/CLI)" },
         { value: "nokia_7750sr_netconf", label: "Nokia 7750 SR (NETCONF)" }
     ],
     ericsson: [
+        { value: "ericsson_router6000_ssh", label: "Ericsson Router 6000 (SSH/CLI)" },
         { value: "ericsson_router6000_cli", label: "Ericsson Router 6000 (CLI)" }
     ],
-    openet: [],
+    openet: [
+        { value: "openet_pm_ssh", label: "Openet Policy Manager (SSH/CLI)" }
+    ],
     huawei: [
+        { value: "huawei_ne40e_ssh", label: "Huawei NE40E (SSH/CLI)" },
         { value: "huawei_ne40e_cli", label: "Huawei NE40E (CLI)" },
         { value: "huawei_ar_g3_cli", label: "Huawei AR G3 (CLI)" },
         { value: "huawei_cloudengine_cli", label: "Huawei CloudEngine S Series (CLI)" }

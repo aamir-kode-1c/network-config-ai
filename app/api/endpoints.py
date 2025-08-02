@@ -69,9 +69,20 @@ async def push_to_sim(request: Request):
         return JSONResponse({"status": "No config or device provided."}, status_code=400)
     try:
         output_lines = []
-        # SSH/CLI simulation (default)
-        if device == "cisco_asr9000_ssh" or device == "ericsson_router6000_cli":
+        # SSH/CLI simulation (vendor-specific ports)
+        if device == "cisco_asr9000_ssh":
             HOST, PORT = "localhost", 2222
+        elif device == "nokia_7750sr_ssh":
+            HOST, PORT = "localhost", 2223
+        elif device == "ericsson_router6000_ssh":
+            HOST, PORT = "localhost", 2224
+        elif device == "huawei_ne40e_ssh":
+            HOST, PORT = "localhost", 2225
+        elif device == "openet_pm_ssh":
+            HOST, PORT = "localhost", 2226
+        else:
+            HOST, PORT = None, None
+        if HOST and PORT:
             with socket.create_connection((HOST, PORT), timeout=5) as s:
                 s.recv(1024)  # Read initial prompt
                 for line in config.splitlines():

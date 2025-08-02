@@ -1,8 +1,0 @@
-configure router interface 1/1/1
-  address 10.10.100.1/30
-  description "Nokia uplink to core 100"
-  mtu 9000
-  vrf core-vpn
-  admin-state up
-  custom_field custom_value
-exit

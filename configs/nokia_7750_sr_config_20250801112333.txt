@@ -1,5 +1,0 @@
-configure router interface to-core
-  address 10.1.1.1/24
-  description "Uplink to Core XX"
-  admin-state up
-exit

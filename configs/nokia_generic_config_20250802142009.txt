@@ -1,0 +1,5 @@
+interface 2/1/1
+  address 1.10.100.1/30
+  description "Nokia uplink to core 12"
+  admin-state up
+exit

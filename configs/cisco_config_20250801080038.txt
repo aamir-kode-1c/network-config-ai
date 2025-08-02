@@ -1,1 +1,0 @@
-<cisco-interface name="GigabitEthernet0/0"><ip>192.168.100.1</ip><subnet>255.255.255.0</subnet><description>Uplink to ISP</description><admin_state>up</admin_state></cisco-interface>

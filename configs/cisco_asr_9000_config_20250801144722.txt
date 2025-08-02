@@ -1,5 +1,0 @@
-interface GigabitEthernet0/1
-  ip address 1.1.1.1 24
-  description 'test'
-  no shutdown
-exit
