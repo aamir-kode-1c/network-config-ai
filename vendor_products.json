@@ -1,0 +1,7 @@
+{
+  "nokia": ["7750 SR", "7250 IXR", "SROS", "Nuage VNS"],
+  "ericsson": ["Router 6000", "MINI-LINK", "SSR 8000"],
+  "cisco": ["ASR 9000", "Catalyst 9000", "Nexus 7000"],
+  "openet": ["Policy Manager", "Charging Gateway"],
+  "huawei": ["NE40E", "AR G3", "CloudEngine S Series"]
+}

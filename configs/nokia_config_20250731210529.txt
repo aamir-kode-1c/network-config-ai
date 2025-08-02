@@ -1,1 +1,0 @@
-Nokia Config Generated: {'interface': 'eth0', 'ip': '10.10.10.2', 'subnet': '255.255.255.0', 'description': 'Uplink to core router', 'admin_state': 'up'}

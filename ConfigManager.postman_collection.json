@@ -1,0 +1,49 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Config Manager API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Generate Vendor Config",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vendor\": \"nokia\",\n  \"nb_payload\": {\"interface\": \"eth0\", \"ip\": \"10.0.0.1\"},\n  \"description\": \"Initial Nokia config\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/generate-config",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["generate-config"]
+        }
+      }
+    },
+    {
+      "name": "Rollback Vendor Config",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vendor\": \"nokia\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/rollback",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["rollback"]
+        }
+      }
+    }
+  ]
+}

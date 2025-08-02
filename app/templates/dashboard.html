@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Manager Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AI-Based Config Manager Dashboard</h1>
+        <form id="configForm" autocomplete="off">
+            <div class="form-group">
+                <label for="vendor">Vendor:
+                    <span class="help" title="Select the network equipment vendor.">&#x1F6C8;</span>
+                </label>
+                <select name="vendor" id="vendor" aria-label="Vendor" required></select>
+            </div>
+            <div class="form-group">
+                <label for="product">Product:
+                    <span class="help" title="Select the specific product/model.">&#x1F6C8;</span>
+                </label>
+                <select name="product" id="product" aria-label="Product" required></select>
+            </div>
+            <div class="form-group">
+                <label for="format">Config Format:
+                    <span class="help" title="Choose the output configuration format.">&#x1F6C8;</span>
+                </label>
+                <select name="format" id="format" aria-label="Config Format" required>
+                    <option value="cli">CLI</option>
+                    <option value="json">JSON</option>
+                    <option value="xml">XML</option>
+                    <option value="yang">YANG</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="nb_payload">NB API Payload (JSON):
+                    <span class="help" title="Provide the northbound API payload as JSON.">&#x1F6C8;</span>
+                </label>
+                <textarea name="nb_payload" id="nb_payload" rows="6" required placeholder='e.g. {"interface": "eth0", "ip": "10.10.10.1"}'></textarea>
+            </div>
+            <div class="form-group">
+                <label for="description">Description:
+                    <span class="help" title="Optional description for this configuration.">&#x1F6C8;</span>
+                </label>
+                <input type="text" name="description" id="description" placeholder="e.g. Initial config for site X"/>
+            </div>
+            <button type="submit" id="generate-btn">Generate Config</button>
+            <div id="form-feedback" class="feedback" style="display:none;"></div>
+            <div id="form-loading" class="loading" style="display:none;">Loading...</div>
+        </form>
+        <div id="output">
+            <button id="agentic-update-btn" type="button">Run Agentic Update</button>
+            <span id="agentic-update-status" style="margin-left:10px;"></span>
+            <div id="generated-config-block" style="display:none;">
+                <h2>Generated Config</h2>
+                <pre id="generated-config"></pre>
+                <div class="form-group">
+                    <label for="sbi-device">SBI Device/Protocol:
+                        <span class="help" title="Choose the southbound interface device/protocol for simulation.">&#x1F6C8;</span>
+                    </label>
+                    <select id="sbi-device"></select>
+                </div>
+                <button type="button">Push to Device</button>
+                <span id="sim-push-status" style="margin-left:10px;"></span>
+                <div id="sim-push-result" class="feedback" style="margin-top:10px;display:none;"></div>
+            </div>
+            <div id="output-error" class="feedback error" style="display:none;"></div>
+        </div>
+        <div id="history-panel">
+            <h2>Config History ({{ selected_vendor|capitalize }})</h2>
+            {% if history and history|length > 0 %}
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th>Commit</th>
+                            <th>Timestamp</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history %}
+                        <tr>
+                            <td style="font-family:monospace;">{{ entry.commit[:7] }}</td>
+                            <td>{{ entry.timestamp }}</td>
+                            <td>{{ entry.message }}</td>
+                            <td>
+                                <form style="display:inline;" method="post" action="/dashboard">
+                                    <input type="hidden" name="vendor" value="{{ selected_vendor }}"/>
+                                    <input type="hidden" name="nb_payload" value="{}"/>
+                                    <input type="hidden" name="description" value="Rollback to commit {{ entry.commit[:7] }}"/>
+                                    <button type="submit" formaction="/dashboard/rollback/{{ entry.commit }}">Rollback</button>
+                                </form>
+                                <button type="button">View</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No config history found for this vendor.</p>
+            {% endif %}
+            <div id="viewed-config" style="margin-top:16px;"></div>
+        </div>
+    </div>
+    
+    
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
