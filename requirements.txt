@@ -4,3 +4,4 @@ gitpython
 pydantic
 pytest
 python-multipart
+jinja2

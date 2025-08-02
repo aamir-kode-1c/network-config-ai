@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  orchestrator:
+    build: .
+    container_name: config-manager-ai
+    ports:
+      - "8000:8000"
+    environment:
+      # Example: set secrets and config here
+      - PYTHONUNBUFFERED=1
+      - PORT=8000
+    volumes:
+      - ./configs:/app/configs
+    restart: unless-stopped
+
+  agent_cisco:
+    build:
+      context: ./agents
+      dockerfile: agent_cisco_ssh.Dockerfile
+    container_name: agent-cisco
+    ports:
+      - "5003:5003"
+    restart: unless-stopped
+
+  agent_nokia:
+    build:
+      context: ./agents
+      dockerfile: agent_nokia_ssh.Dockerfile
+    container_name: agent-nokia
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+
+  agent_ericsson:
+    build:
+      context: ./agents
+      dockerfile: agent_ericsson_ssh.Dockerfile
+    container_name: agent-ericsson
+    ports:
+      - "5004:5004"
+    restart: unless-stopped
+
+  agent_openet:
+    build:
+      context: ./agents
+      dockerfile: agent_openet_ssh.Dockerfile
+    container_name: agent-openet
+    ports:
+      - "5005:5005"
+    restart: unless-stopped
+
+  # Example agent service (Cisco)
+  agent_cisco:
+    build:
+      context: ./agents
+      dockerfile: agent_cisco_ssh.Dockerfile
+    container_name: agent-cisco
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "5003:5003"
+    restart: unless-stopped
+
+# Uncomment and configure if you use a database
+# db:
+#   image: postgres:15
+#   environment:
+#     - POSTGRES_USER=user
+#     - POSTGRES_PASSWORD=pass
+#     - POSTGRES_DB=dbname
+#   volumes:
+#     - pgdata:/var/lib/postgresql/data
+#   restart: unless-stopped
+
+volumes:
+  # pgdata:

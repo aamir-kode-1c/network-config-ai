@@ -11,6 +11,88 @@ This project is a production-ready, extensible, multi-vendor network configurati
 
 ---
 
+## Agentic AI Device Connectors
+
+The Agentic AI Device Connectors module provides a robust, extensible E2E workflow for multi-vendor network configuration management, bridging the gap between northbound intent (NBI) and southbound device configuration (SBI) via agent microservices for each vendor.
+
+### What It Does
+- Lets you register and manage agent endpoints for each supported vendor (Cisco, Nokia, Ericsson, Huawei, Openet, etc.).
+- Provides a built-in NBI Payload Generator to create NB API payloads and generate vendor-specific configs.
+- Enables direct push of generated configs to physical or simulated hardware via agents, supporting SSH, NETCONF, or other protocols.
+- Supports E2E testing, demo, and production workflows from the dashboard.
+
+### Agentic AI Workflow Diagram
+
+```mermaid
+graph TD
+    subgraph Dashboard
+        A[NBI Payload Generator]
+        B[Agent Registration]
+        C[Push Config Form]
+    end
+    subgraph Backend
+        D[Config Generator]
+        E[Agent Registry]
+        F[Push-to-Agent Endpoint]
+    end
+    subgraph Agents
+        G[Cisco Agent]
+        H[Nokia Agent]
+        I[Ericsson Agent]
+        J[Openet Agent]
+    end
+    subgraph Devices
+        K[Cisco Device]
+        L[Nokia Device]
+        M[Ericsson Device]
+        N[Openet Device]
+    end
+
+    A-->|Generate Config|D
+    B-->|Register Agent|E
+    C-->|Push Config|F
+    D-->|Return Config|A
+    F-->|Send Config|G
+    F-->|Send Config|H
+    F-->|Send Config|I
+    F-->|Send Config|J
+    G-->|Apply Config|K
+    H-->|Apply Config|L
+    I-->|Apply Config|M
+    J-->|Apply Config|N
+    G-->|Status/Output|F
+    H-->|Status/Output|F
+    I-->|Status/Output|F
+    J-->|Status/Output|F
+    F-->|Show Output|C
+```
+
+### Features & E2E Flow
+
+- **NBI Payload Generator:**
+  - Compose NB API payloads (JSON) for any vendor/product.
+  - Generate vendor-specific CLI/JSON/XML/YANG configs instantly.
+  - Copy generated config directly to the push form.
+
+- **Agent Registration:**
+  - Register agent endpoints (IP/port, token) for each vendor.
+  - View agent status, last sync, and manage endpoints.
+
+- **Config Push:**
+  - Select vendor, paste/generated config, and push directly to the device via the registered agent.
+  - Supports real hardware or simulators for safe E2E testing.
+
+- **Agent Microservices:**
+  - Each vendor agent runs as a microservice (FastAPI/Uvicorn, Docker-ready).
+  - Agents connect to devices via SSH, NETCONF, or other protocols.
+  - Agents return status/output to the dashboard for full visibility.
+
+- **E2E Orchestration:**
+  - From NBI intent to device config, the workflow is fully automated, observable, and extensible.
+  - Supports demo, development, and production deployments.
+
+---
+
 ## Key Features
 
 - **Dynamic Vendor/Product Selection:** Supports multiple vendors and products with automatic dropdown population.
