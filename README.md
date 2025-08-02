@@ -179,9 +179,11 @@ This project includes an interactive API documentation and testing tool using **
 - **Why Use Swagger?**
   - Great for developers, testers, and integrators to quickly validate and experiment with the API.
   - Ensures your API is self-documenting and always up to date.
+
+  
 ![alt text](image-2.png)
 
-For advanced usage, you can also access the raw OpenAPI JSON at `/openapi.json`.
+   For advanced usage, you can also access the raw OpenAPI JSON at `/openapi.json`.
 ---
 
 ## Docker Compose Quickstart
