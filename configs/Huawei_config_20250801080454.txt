@@ -1,6 +1,0 @@
-interface GigabitEthernet0/0 {
-  ip-address 192.168.100.1;
-  subnet 255.255.255.0;
-  description Uplink to ISP;
-  admin-state up;
-}

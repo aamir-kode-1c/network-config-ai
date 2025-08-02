@@ -1,5 +1,0 @@
-interface 1/1/1
-  address 10.10.100.1/30
-  description "Nokia uplink to core"
-  admin-state up
-exit

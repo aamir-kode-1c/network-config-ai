@@ -1,8 +1,0 @@
-interface ge-0/1/1
-  ip address 172.16.1.1 40
-  description 'cisco uplink'
-  mtu 9000
-  vrf forwarding customer-vpn
-  no shutdown
-  custom_param custom_value
-exit

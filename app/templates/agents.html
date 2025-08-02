@@ -1,0 +1,66 @@
+{% extends "agents_nav.html" %}
+{% block content %}
+<div class="container">
+    <h1>Agentic AI Device Connectors</h1>
+    <p>This page manages the agentic AI connectors for each vendor, enabling direct SBI (southbound interface) pushes to physical hardware via vendor-specific agents.</p>
+
+    <form id="agent-form" autocomplete="off">
+        <div class="form-group">
+            <label for="vendor">Vendor:</label>
+            <select name="vendor" id="vendor" required>
+                <option value="cisco">Cisco</option>
+                <option value="nokia">Nokia</option>
+                <option value="ericsson">Ericsson</option>
+                <option value="huawei">Huawei</option>
+                <option value="openet">Openet</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="agent-address">Agent Endpoint (IP/Hostname:Port):</label>
+            <input type="text" name="agent-address" id="agent-address" placeholder="e.g. 10.0.0.2:5000" required />
+        </div>
+        <div class="form-group">
+            <label for="auth-token">Auth Token (optional):</label>
+            <input type="text" name="auth-token" id="auth-token" placeholder="API Key or Token" />
+        </div>
+        <button type="submit">Register Agent</button>
+        <div id="agent-form-feedback" class="feedback" style="display:none;"></div>
+    </form>
+
+    <h2>Registered Agents</h2>
+    <table id="agents-table" class="agents-table">
+        <thead>
+            <tr>
+                <th>Vendor</th>
+                <th>Agent Endpoint</th>
+                <th>Status</th>
+                <th>Last Sync</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Populated by JS -->
+        </tbody>
+    </table>
+
+    <h2>Push Config to Physical Hardware</h2>
+    <form id="push-agent-form" autocomplete="off">
+        <div class="form-group">
+            <label for="push-vendor">Vendor:</label>
+            <select name="push-vendor" id="push-vendor" required>
+                <option value="cisco">Cisco</option>
+                <option value="nokia">Nokia</option>
+                <option value="ericsson">Ericsson</option>
+                <option value="huawei">Huawei</option>
+                <option value="openet">Openet</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="push-config">Configuration:</label>
+            <textarea name="push-config" id="push-config" rows="6" required placeholder="Paste generated config here..."></textarea>
+        </div>
+        <button type="submit">Push to Hardware</button>
+        <div id="push-agent-feedback" class="feedback" style="display:none;"></div>
+    </form>
+</div>
+{% endblock %}

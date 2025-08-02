@@ -1,5 +1,0 @@
-interface test
-  switchport mode access
-  switchport access vlan 1
-  description 'test'
-exit

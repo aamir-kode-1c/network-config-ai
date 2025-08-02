@@ -1,5 +1,0 @@
-interface ge-1/0/1
-  address 192.16.1.1/30
-  description "Ericsson uplink 20"
-  admin-state up
-exit

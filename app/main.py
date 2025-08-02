@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from app.api import endpoints
 from app.api.history import router as history_router
+from app.api.agents import router as agents_router
 from app.core.config_generator import generate_config
 from app.core.gitops import commit_config
 from app.core.gitops_utils import get_config_history, get_config_content
@@ -23,6 +24,7 @@ templates = Jinja2Templates(directory=templates_dir)
 
 app.include_router(endpoints.router)
 app.include_router(history_router)
+app.include_router(agents_router)
 
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
@@ -54,6 +56,10 @@ def dashboard_post(
         "dashboard.html",
         {"request": request, "config": config, "error": error, "history": history, "selected_vendor": vendor}
     )
+
+@app.get("/agents", response_class=HTMLResponse)
+def agents_page(request: Request):
+    return templates.TemplateResponse("agents.html", {"request": request})
 
 @app.post("/dashboard/rollback/{commit_hash}", response_class=HTMLResponse)
 def dashboard_rollback(request: Request, commit_hash: str, vendor: str = Form(...)):

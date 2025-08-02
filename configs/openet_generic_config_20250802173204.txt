@@ -1,8 +1,0 @@
-openet-interface ge-0/1/1
-  ip 12.16.1.1/40
-  note "opennet uplink 1"
-  mtu 9000
-  vrf customer-vpn
-  state up
-  custom_param custom_value
-end

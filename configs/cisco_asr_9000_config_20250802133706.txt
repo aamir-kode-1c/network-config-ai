@@ -1,8 +1,0 @@
-interface GigabitEthernet1/1/1/1
-  ip address 192.2.20.11 255.255.255.0
-  description 'Uplink to Core Router 50'
-  mtu 1500
-  vrf forwarding default
-  no shutdown
-  custom_param custom_value
-exit

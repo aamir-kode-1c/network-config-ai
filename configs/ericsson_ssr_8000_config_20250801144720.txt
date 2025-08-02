@@ -1,4 +1,0 @@
-set interface eth0
-  address 1.1.1.1/24
-  description 'test'
-commit

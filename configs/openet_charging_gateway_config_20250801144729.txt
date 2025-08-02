@@ -1,5 +1,0 @@
-cg-if cg0
-  ip 1.1.1.1/24
-  note 'test'
-  status up
-end
