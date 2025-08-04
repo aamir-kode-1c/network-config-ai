@@ -1,0 +1,5 @@
+interface 2/1/1
+  address 10.20.100.1/40
+  description "Nokia uplink x"
+  admin-state up
+exit
