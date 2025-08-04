@@ -1,0 +1,5 @@
+interface GigabitEthernet0/2/0/1
+ ip address 192.168.50.1 255.255.255.252
+ description Uplink to Data Center
+ no shutdown
+exit
