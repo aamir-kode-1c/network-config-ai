@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request, Body
 import shutil
-import shutil
 from fastapi.responses import JSONResponse
 import json
 from pydantic import BaseModel
@@ -11,6 +10,80 @@ from app.core.gitops_utils import get_config_history, get_config_content
 import subprocess, sys, os
 
 router = APIRouter()
+
+VENDOR_PRODUCTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../vendor_products.json'))
+SIMULATOR_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../simulators'))
+AGENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../agents'))
+
+# Helper: Mock authorized source fetch
+def fetch_product_details(vendor, product):
+    # In real-world, pull from API/db
+    return {
+        "vendor": vendor,
+        "product": product,
+        "description": f"Auto-generated details for {vendor} {product}",
+        "features": ["feature1", "feature2"]
+    }
+
+# Helper: Create simulator stub
+def create_simulator(vendor, product):
+    os.makedirs(SIMULATOR_DIR, exist_ok=True)
+    sim_file = os.path.join(SIMULATOR_DIR, f"sim_{vendor.lower()}_{product.lower().replace(' ', '_')}.py")
+    if not os.path.exists(sim_file):
+        with open(sim_file, 'w') as f:
+            f.write(f"""# Simulator for {vendor} {product}\nclass {vendor.title()}{product.title().replace(' ', '')}Simulator:\n    def run(self):\n        return 'Simulating {vendor} {product}'\n""")
+    return sim_file
+
+# Helper: Create agent stub
+def create_agent(vendor, product):
+    os.makedirs(AGENT_DIR, exist_ok=True)
+    agent_file = os.path.join(AGENT_DIR, f"agent_{vendor.lower()}_{product.lower().replace(' ', '_')}.py")
+    if not os.path.exists(agent_file):
+        with open(agent_file, 'w') as f:
+            f.write(f"""# Agent for {vendor} {product}\nclass {vendor.title()}{product.title().replace(' ', '')}Agent:\n    def connect(self):\n        return 'Connecting to {vendor} {product} physical server'\n""")
+    return agent_file
+
+# Helper: Update vendor_products.json
+def update_vendor_products(vendor, product):
+    try:
+        with open(VENDOR_PRODUCTS_PATH, 'r') as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+    if vendor.lower() in data:
+        if product not in data[vendor.lower()]:
+            data[vendor.lower()].append(product)
+    else:
+        data[vendor.lower()] = [product]
+    with open(VENDOR_PRODUCTS_PATH, 'w') as f:
+        json.dump(data, f, indent=2)
+    return data
+
+@router.post("/add-vendor-product")
+async def add_vendor_product(request: Request):
+    try:
+        body = await request.json()
+        vendor = body.get('vendor')
+        product = body.get('product')
+        if not vendor or not product:
+            return JSONResponse({"error": "Vendor and product required."}, status_code=400)
+        # Step 1: Fetch product details (mocked)
+        details = fetch_product_details(vendor, product)
+        # Step 2: Create simulator
+        sim_path = create_simulator(vendor, product)
+        # Step 3: Create agent
+        agent_path = create_agent(vendor, product)
+        # Step 4: Update vendor_products.json
+        updated_list = update_vendor_products(vendor, product)
+        return JSONResponse({
+            "status": f"Successfully added {vendor} {product}. Simulator and agent created.",
+            "details": details,
+            "simulator": sim_path,
+            "agent": agent_path,
+            "vendor_products": updated_list
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 class ConfigRequest(BaseModel):
     vendor: str
@@ -116,7 +189,7 @@ def rollback(request: ConfigRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/api/vendor-products")
+@router.get("/vendor-products")
 def get_vendor_products():
     """
     Returns the vendor-product mapping from vendor_products.json as JSON.

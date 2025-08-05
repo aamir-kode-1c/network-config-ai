@@ -8,12 +8,8 @@
         <div class="form-group">
             <label for="vendor">Vendor:</label>
             <select name="vendor" id="vendor" required>
-                <option value="cisco">Cisco</option>
-                <option value="nokia">Nokia</option>
-                <option value="ericsson">Ericsson</option>
-                <option value="huawei">Huawei</option>
-                <option value="openet">Openet</option>
-            </select>
+    <!-- Options populated by JS -->
+</select>
         </div>
         <div class="form-group">
             <label for="agent-address">Agent Endpoint (IP/Hostname:Port):</label>
@@ -48,12 +44,8 @@
         <div class="form-group">
             <label for="nbi-vendor">Vendor:</label>
             <select name="nbi-vendor" id="nbi-vendor" required>
-                <option value="cisco">Cisco</option>
-                <option value="nokia">Nokia</option>
-                <option value="ericsson">Ericsson</option>
-                <option value="huawei">Huawei</option>
-                <option value="openet">Openet</option>
-            </select>
+    <!-- Options populated by JS -->
+</select>
         </div>
         <div class="form-group">
             <label for="nbi-product">Product:</label>
@@ -86,12 +78,8 @@
         <div class="form-group">
             <label for="push-vendor">Vendor:</label>
             <select name="push-vendor" id="push-vendor" required>
-                <option value="cisco">Cisco</option>
-                <option value="nokia">Nokia</option>
-                <option value="ericsson">Ericsson</option>
-                <option value="huawei">Huawei</option>
-                <option value="openet">Openet</option>
-            </select>
+    <!-- Options populated by JS -->
+</select>
         </div>
         <div class="form-group">
             <label for="push-config">Configuration:</label>
@@ -101,4 +89,86 @@
         <div id="push-agent-feedback" class="feedback" style="display:none;"></div>
     </form>
 </div>
+<script>
+async function populateVendors() {
+    try {
+        const resp = await fetch('/api/vendor-products');
+        const data = await resp.json();
+        const vendorList = Object.keys(data);
+        const vendorSelects = [
+            document.getElementById('vendor'),
+            document.getElementById('nbi-vendor'),
+            document.getElementById('push-vendor')
+        ];
+        vendorSelects.forEach(select => {
+            if (!select) return;
+            select.innerHTML = '';
+            vendorList.forEach(vendor => {
+                const opt = document.createElement('option');
+                opt.value = vendor;
+                opt.textContent = vendor.charAt(0).toUpperCase() + vendor.slice(1);
+                select.appendChild(opt);
+            });
+        });
+    } catch (e) {
+        console.error('Failed to load vendors:', e);
+    }
+}
+
+async function populateAgentsTable() {
+    try {
+        const resp = await fetch('/api/agents/list');
+        const agents = await resp.json();
+        const tbody = document.querySelector('#agents-table tbody');
+        tbody.innerHTML = '';
+        if (agents.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 5;
+            td.textContent = 'No agents registered.';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+        agents.forEach(agent => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+    <td>${agent.vendor.charAt(0).toUpperCase() + agent.vendor.slice(1)}</td>
+    <td>${agent.endpoint}</td>
+    <td>${agent.status || ''}</td>
+    <td>${agent.last_sync || ''}</td>
+    <td><button class="delete-agent-btn" data-vendor="${agent.vendor}" data-endpoint="${agent.endpoint}">Delete</button></td>
+`;
+tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error('Failed to load agents:', e);
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    populateVendors();
+    populateAgentsTable();
+
+    // Delegate delete button clicks
+    document.querySelector('#agents-table').addEventListener('click', async function(e) {
+        if (e.target && e.target.classList.contains('delete-agent-btn')) {
+            const vendor = e.target.getAttribute('data-vendor');
+            const endpoint = e.target.getAttribute('data-endpoint');
+            if (confirm(`Delete agent for ${vendor} (${endpoint})?`)) {
+                try {
+                    const resp = await fetch(`/api/agents/delete?vendor=${encodeURIComponent(vendor)}&endpoint=${encodeURIComponent(endpoint)}`, { method: 'DELETE' });
+                    const data = await resp.json();
+                    if (data.status === 'deleted') {
+                        populateAgentsTable();
+                    } else {
+                        alert('Delete failed: ' + (data.status || 'Unknown error'));
+                    }
+                } catch (err) {
+                    alert('Delete failed: ' + err);
+                }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

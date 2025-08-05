@@ -5,8 +5,25 @@ import time
 
 router = APIRouter()
 
-# In-memory agent registry (replace with DB for production)
-agents_registry: Dict[str, Dict] = {}
+import os
+import json
+AGENTS_REGISTRY_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../agents_registry.json'))
+
+def load_agents_registry():
+    if os.path.exists(AGENTS_REGISTRY_PATH):
+        try:
+            with open(AGENTS_REGISTRY_PATH, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_agents_registry(registry):
+    with open(AGENTS_REGISTRY_PATH, 'w') as f:
+        json.dump(registry, f, indent=2)
+
+# Persistent agent registry
+agents_registry: Dict[str, Dict] = load_agents_registry()
 
 @router.post("/api/agents/register")
 def register_agent(agent: dict = Body(...)):
@@ -15,18 +32,46 @@ def register_agent(agent: dict = Body(...)):
     token = agent.get("token", None)
     if not vendor or not endpoint:
         return JSONResponse({"status": "Missing vendor or endpoint"}, status_code=400)
-    agents_registry[vendor] = {
+    agent_entry = {
         "endpoint": endpoint,
         "token": token,
         "status": "Online",
         "last_sync": time.strftime("%Y-%m-%d %H:%M:%S")
     }
+    if vendor in agents_registry:
+        # Prevent duplicates for same endpoint
+        if not any(a['endpoint'] == endpoint for a in agents_registry[vendor]):
+            agents_registry[vendor].append(agent_entry)
+    else:
+        agents_registry[vendor] = [agent_entry]
+    save_agents_registry(agents_registry)
     return {"status": "registered", "vendor": vendor}
 
 @router.get("/api/agents/list")
 def list_agents():
-    # Return all registered agents
-    return [{"vendor": v, **info} for v, info in agents_registry.items()]
+    agents_registry.update(load_agents_registry())  # reload in case of external changes
+    agent_list = []
+    for vendor, agents in agents_registry.items():
+        for agent in agents:
+            entry = {"vendor": vendor}
+            entry.update(agent)
+            agent_list.append(entry)
+    return agent_list
+
+from fastapi import Query
+
+@router.delete("/api/agents/delete")
+def delete_agent(vendor: str = Query(...), endpoint: str = Query(...)):
+    agents_registry.update(load_agents_registry())
+    if vendor in agents_registry:
+        original_count = len(agents_registry[vendor])
+        agents_registry[vendor] = [a for a in agents_registry[vendor] if a['endpoint'] != endpoint]
+        if not agents_registry[vendor]:
+            del agents_registry[vendor]
+        save_agents_registry(agents_registry)
+        if len(agents_registry.get(vendor, [])) < original_count:
+            return {"status": "deleted", "vendor": vendor, "endpoint": endpoint}
+    return JSONResponse({"status": "not found", "vendor": vendor, "endpoint": endpoint}, status_code=404)
 
 @router.post("/api/agents/push")
 def push_to_agent(vendor: str = Body(...), config: str = Body(...)):

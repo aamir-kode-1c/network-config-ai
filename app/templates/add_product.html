@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Vendor/Product</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+    <nav style="position:absolute;top:16px;right:24px;font-size:17px;">
+        <a href="/dashboard" style="color:#1976d2;text-decoration:none;font-weight:bold;">Dashboard</a>
+        <a href="/agents" style="color:#1976d2;text-decoration:none;font-weight:bold;margin-left:20px;">Device Connectors</a>
+    </nav>
+    <div class="container">
+        <h1>Add Vendor/Product</h1>
+        <form id="add-product-form" method="post" autocomplete="off">
+            <div class="form-group">
+                <label for="vendor">Vendor Name:</label>
+                <input type="text" name="vendor" id="vendor" required placeholder="e.g. Cisco" />
+            </div>
+            <div class="form-group">
+                <label for="product">Product Name:</label>
+                <input type="text" name="product" id="product" required placeholder="e.g. ASR 9000" />
+            </div>
+            <button type="submit">Add Product</button>
+            <div id="add-product-feedback" class="feedback" style="display:none;"></div>
+        </form>
+    </div>
+    <script>
+    document.getElementById('add-product-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const vendor = document.getElementById('vendor').value;
+        const product = document.getElementById('product').value;
+        const feedback = document.getElementById('add-product-feedback');
+        feedback.style.display = 'none';
+        const resp = await fetch('/api/add-vendor-product', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({vendor, product})
+        });
+        const data = await resp.json();
+        feedback.style.display = 'block';
+        feedback.textContent = data.status || data.error || 'Unknown response';
+        if (data.status && data.status.toLowerCase().includes('success')) {
+            document.getElementById('add-product-form').reset();
+        }
+    };
+    </script>
+</body>
+</html>

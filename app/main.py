@@ -22,9 +22,13 @@ templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
 
-app.include_router(endpoints.router)
+app.include_router(endpoints.router, prefix="/api")
 app.include_router(history_router)
 app.include_router(agents_router)
+
+@app.get("/add-vendor-product", response_class=HTMLResponse)
+def add_vendor_product_page(request: Request):
+    return templates.TemplateResponse("add_product.html", {"request": request})
 
 from fastapi.responses import JSONResponse
 
