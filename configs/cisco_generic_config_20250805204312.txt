@@ -1,0 +1,5 @@
+interface 1/1/1
+ ip address 10.10.100.1 30
+ description Nokia uplink 400
+ no shutdown
+exit
