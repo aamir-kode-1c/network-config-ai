@@ -1,5 +1,0 @@
-interface ge-0/1/1
- ip address 172.16.1.1 40
- description cisco uplink
- no shutdown
-exit

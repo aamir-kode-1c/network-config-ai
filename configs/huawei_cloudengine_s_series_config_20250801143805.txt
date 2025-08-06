@@ -1,2 +1,0 @@
-# TODO: Implement CLI for CloudEngine S Series
-# Add config lines here

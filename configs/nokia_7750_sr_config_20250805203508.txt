@@ -1,7 +1,0 @@
-configure router interface 1/1/1
-  address 10.10.100.1/30
-  description "Nokia uplink"
-  mtu 9000
-  vrf customer-vpn
-  admin-state up
-exit

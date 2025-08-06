@@ -43,6 +43,15 @@
         feedback.textContent = data.status || data.error || 'Unknown response';
         if (data.status && data.status.toLowerCase().includes('success')) {
             document.getElementById('add-product-form').reset();
+            // Attempt to refresh vendor dropdowns in the agents dashboard if open
+            if (window.opener && window.opener.populateVendors) {
+                window.opener.populateVendors();
+            } else if (window.parent && window.parent !== window && window.parent.populateVendors) {
+                window.parent.populateVendors();
+            } else {
+                // Optionally, reload the agents page if user is on it
+                // window.location.href = '/agents';
+            }
         }
     };
     </script>

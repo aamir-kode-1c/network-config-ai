@@ -1,5 +1,0 @@
-interface 1/1
-  address 10.1.100.1/30
-  description "Nokia uplink 100"
-  admin-state up
-exit

@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", function() {
             return;
         }
 
-        fetch('/generate-config', {
+        fetch('/api/generate-config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

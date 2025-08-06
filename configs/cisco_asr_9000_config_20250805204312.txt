@@ -1,7 +1,0 @@
-interface 1/1/1
-  ip address 10.10.100.1 30
-  description 'Nokia uplink 400'
-  mtu 9000
-  vrf forwarding customer-vpn-400
-  no shutdown
-exit

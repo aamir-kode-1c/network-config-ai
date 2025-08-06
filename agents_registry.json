@@ -1,0 +1,10 @@
+{
+  "nokia": [
+    {
+      "endpoint": "localhost:5001",
+      "token": "",
+      "status": "Online",
+      "last_sync": "2025-08-05 20:36:54"
+    }
+  ]
+}

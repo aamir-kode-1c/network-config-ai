@@ -148,6 +148,7 @@ tbody.appendChild(tr);
 document.addEventListener('DOMContentLoaded', () => {
     populateVendors();
     populateAgentsTable();
+    setInterval(populateVendors, 5000); // Auto-refresh vendors every 5 seconds
 
     // Delegate delete button clicks
     document.querySelector('#agents-table').addEventListener('click', async function(e) {

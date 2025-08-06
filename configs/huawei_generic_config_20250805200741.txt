@@ -1,5 +1,0 @@
-interface he-0/0/1
-  ip address 172.16.1.1 30
-  description "hpe uplink"
-  admin-state up
-quit

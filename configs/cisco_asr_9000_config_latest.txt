@@ -1,10 +1,7 @@
-{
-  "interface": "GigabitEthernet0/0/0/0",
-  "ip": "192.0.2.10",
-  "subnet": "255.255.255.0",
-  "description": "Uplink to Core Router",
-  "admin_state": "up",
-  "mtu": 1500,
-  "shutdown": false,
-  "vrf": "default"
-}
+interface 1/1/1
+  ip address 10.10.100.1 30
+  description 'Nokia uplink 400'
+  mtu 9000
+  vrf forwarding customer-vpn-400
+  no shutdown
+exit

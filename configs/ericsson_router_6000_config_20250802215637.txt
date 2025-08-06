@@ -1,7 +1,0 @@
-interface ge-0/0/1
-  ip address 172.16.1.1/30
-  description 'Ericsson uplink'
-  mtu 9000
-  vrf customer-vpn
-  admin-state up
-exit
