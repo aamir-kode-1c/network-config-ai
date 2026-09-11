@@ -10,23 +10,50 @@ services:
       # Example: set secrets and config here
       - PYTHONUNBUFFERED=1
       - PORT=8000
+      - VENDOR_CATALOG_URL=${VENDOR_CATALOG_URL:-}
+      - CONFIG_MANAGER_API_KEY=${CONFIG_MANAGER_API_KEY:-}
+      - CONFIG_MANAGER_API_KEYS=${CONFIG_MANAGER_API_KEYS:-}
+      - CONFIG_MANAGER_API_ROLE=${CONFIG_MANAGER_API_ROLE:-operator}
+      - CONFIG_MANAGER_API_ACTOR=${CONFIG_MANAGER_API_ACTOR:-api-client}
+      - CONFIG_MANAGER_DEPLOYMENT_MODE=${CONFIG_MANAGER_DEPLOYMENT_MODE:-disabled}
+      - DEVICE_INVENTORY_JSON=${DEVICE_INVENTORY_JSON:-}
+      - CONFIG_DB_PATH=/app/configs/network_config_manager.db
+      - RAG_DB_PATH=/app/configs/vendor_knowledge.db
+      - CONFIG_MANAGER_ALERT_WEBHOOK=${CONFIG_MANAGER_ALERT_WEBHOOK:-}
+      - CISCO_AGENT_URL=http://agent-cisco:5003
     volumes:
       - ./configs:/app/configs
     restart: unless-stopped
 
   agent_cisco:
     build:
-      context: ./agents
-      dockerfile: agent_cisco_ssh.Dockerfile
+      context: .
+      dockerfile: agents/agent_cisco_ssh.Dockerfile
     container_name: agent-cisco
+    environment:
+      - CISCO_DEVICE_HOST=cisco-simulator
+      - CISCO_DEVICE_PORT=22
+      - CISCO_DEVICE_USERNAME=${CISCO_SIMULATOR_USERNAME:-admin}
+      - CISCO_DEVICE_PASSWORD=${CISCO_SIMULATOR_PASSWORD:-cisco}
     ports:
       - "5003:5003"
     restart: unless-stopped
 
+  cisco_simulator:
+    build:
+      context: ./simulator
+    container_name: cisco-simulator
+    environment:
+      - CISCO_SIMULATOR_USERNAME=${CISCO_SIMULATOR_USERNAME:-admin}
+      - CISCO_SIMULATOR_PASSWORD=${CISCO_SIMULATOR_PASSWORD:-cisco}
+    ports:
+      - "2222:22"
+    restart: unless-stopped
+
   agent_nokia:
     build:
-      context: ./agents
-      dockerfile: agent_nokia_ssh.Dockerfile
+      context: .
+      dockerfile: agents/agent_nokia_ssh.Dockerfile
     container_name: agent-nokia
     ports:
       - "5001:5001"
@@ -34,8 +61,8 @@ services:
 
   agent_ericsson:
     build:
-      context: ./agents
-      dockerfile: agent_ericsson_ssh.Dockerfile
+      context: .
+      dockerfile: agents/agent_ericsson_ssh.Dockerfile
     container_name: agent-ericsson
     ports:
       - "5004:5004"
@@ -43,23 +70,11 @@ services:
 
   agent_openet:
     build:
-      context: ./agents
-      dockerfile: agent_openet_ssh.Dockerfile
+      context: .
+      dockerfile: agents/agent_openet_ssh.Dockerfile
     container_name: agent-openet
     ports:
       - "5005:5005"
-    restart: unless-stopped
-
-  # Example agent service (Cisco)
-  agent_cisco:
-    build:
-      context: ./agents
-      dockerfile: agent_cisco_ssh.Dockerfile
-    container_name: agent-cisco
-    environment:
-      - PYTHONUNBUFFERED=1
-    ports:
-      - "5003:5003"
     restart: unless-stopped
 
 # Uncomment and configure if you use a database
@@ -73,5 +88,4 @@ services:
 #     - pgdata:/var/lib/postgresql/data
 #   restart: unless-stopped
 
-volumes:
-  # pgdata:
+volumes: {}

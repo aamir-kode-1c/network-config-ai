@@ -3,21 +3,43 @@ import shutil
 import shutil
 from fastapi.responses import JSONResponse
 import json
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+from typing import Literal
 from typing import Any
 from app.core.config_generator import generate_config
 from app.core.gitops import commit_config, rollback_config
 from app.core.gitops_utils import get_config_history, get_config_content
+from app.core.vendor_catalog import (
+    catalog_as_product_mapping,
+    discover_catalog,
+    get_payload_templates,
+    load_catalog,
+)
+from app.core.observability import increment, metric_value, set_gauge
 import subprocess, sys, os
 
 router = APIRouter()
 
 class ConfigRequest(BaseModel):
-    vendor: str
-    product: str
+    vendor: str = Field(min_length=1, max_length=64)
+    product: str = Field(min_length=1, max_length=128)
     nb_payload: dict
-    description: str = ""
-    format: str = "cli"  # New: allow format selection (cli, json, xml, yang)
+    description: str = Field(default="", max_length=500)
+    format: Literal["cli", "json", "xml", "yang"] = "cli"
+
+    @field_validator("vendor", "product", "description")
+    @classmethod
+    def normalize_text(cls, value: str) -> str:
+        if any(ord(char) < 32 for char in value):
+            raise ValueError("text fields may not contain control characters")
+        return value.strip()
+
+    @field_validator("nb_payload")
+    @classmethod
+    def limit_payload(cls, value: dict) -> dict:
+        if len(json.dumps(value, default=str)) > 64 * 1024:
+            raise ValueError("nb_payload exceeds the 64 KiB limit")
+        return value
 
 class ConfigResponse(BaseModel):
     vendor: str
@@ -39,8 +61,10 @@ def generate_vendor_config(request: ConfigRequest):
     try:
         config = generate_config(request.vendor, request.nb_payload, request.format, request.product)
         commit_config(request.vendor, config, request.description, request.product)
+        increment("configuration_commits_total", {"vendor": request.vendor, "product": request.product, "status": "success"})
         return {"vendor": request.vendor, "config": config}
     except Exception as e:
+        increment("configuration_commits_total", {"vendor": request.vendor, "product": request.product, "status": "failure"})
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/run-agentic-update")
@@ -71,7 +95,15 @@ async def push_to_sim(request: Request):
         output_lines = []
         # SSH/CLI simulation (vendor-specific ports)
         if device == "cisco_asr9000_ssh":
-            HOST, PORT = "localhost", 2222
+            import httpx
+            import os
+            response = httpx.post(
+                os.getenv("CISCO_AGENT_URL", "http://agent-cisco:5003") + "/push-config",
+                json={"config": config},
+                timeout=30,
+            )
+            increment("simulated_deployments_total", {"vendor": "cisco", "transport": "agent", "status": "success" if response.is_success and response.json().get("status") == "success" else "failure"})
+            return JSONResponse(response.json(), status_code=response.status_code)
         elif device == "nokia_7750sr_ssh":
             HOST, PORT = "localhost", 2223
         elif device == "ericsson_router6000_ssh":
@@ -92,15 +124,18 @@ async def push_to_sim(request: Request):
                 s.sendall(b"exit\n")
                 resp = s.recv(1024)
                 output_lines.append(resp.decode().strip())
+            increment("simulated_deployments_total", {"vendor": device.split("_", 1)[0], "transport": "ssh", "status": "success"})
             return JSONResponse({"status": f"Config pushed to simulated device ({device}).", "output": '\n'.join(output_lines)})
         # NETCONF simulation
         elif device in ["cisco_asr9000_netconf", "nokia_7750sr_netconf"]:
             # Simulate NETCONF session (in real usage, use ncclient or similar)
             output_lines.append("[NETCONF] Simulated push: " + config.replace('\n', ' | '))
+            increment("simulated_deployments_total", {"vendor": device.split("_", 1)[0], "transport": "netconf", "status": "success"})
             return JSONResponse({"status": f"Config pushed via NETCONF to {device} (simulated)", "output": '\n'.join(output_lines)})
         else:
             return JSONResponse({"status": f"Unknown device/protocol: {device}"}, status_code=400)
     except Exception as e:
+        increment("simulated_deployments_total", {"vendor": "unknown", "transport": "unknown", "status": "failure"})
         return JSONResponse({"status": f"Push failed: {str(e)}"}, status_code=500)
         
 @router.post("/rollback", response_model=RollbackResponse, summary="Rollback vendor config", response_description="Rolled back config for the vendor")
@@ -112,8 +147,14 @@ def rollback(request: ConfigRequest):
     """
     try:
         config = rollback_config(request.vendor, request.product)
+        increment("configuration_rollbacks_total", {"vendor": request.vendor, "status": "success"})
+        attempts = metric_value("configuration_rollbacks_total", {"vendor": request.vendor, "status": "success"}) + metric_value("configuration_rollbacks_total", {"vendor": request.vendor, "status": "failure"})
+        set_gauge("configuration_rollback_rate", float(metric_value("configuration_rollbacks_total", {"vendor": request.vendor, "status": "success"})) / attempts if attempts else 0, {"vendor": request.vendor})
         return {"vendor": request.vendor, "rolled_back_config": config}
     except Exception as e:
+        increment("configuration_rollbacks_total", {"vendor": request.vendor, "status": "failure"})
+        attempts = metric_value("configuration_rollbacks_total", {"vendor": request.vendor, "status": "success"}) + metric_value("configuration_rollbacks_total", {"vendor": request.vendor, "status": "failure"})
+        set_gauge("configuration_rollback_rate", float(metric_value("configuration_rollbacks_total", {"vendor": request.vendor, "status": "success"})) / attempts if attempts else 0, {"vendor": request.vendor})
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/api/vendor-products")
@@ -122,13 +163,40 @@ def get_vendor_products():
     Returns the vendor-product mapping from vendor_products.json as JSON.
     """
     try:
-        import os
-        vendor_file = os.path.join(os.getcwd(), "vendor_products.json")
-        with open(vendor_file, "r") as f:
-            data = json.load(f)
-        return JSONResponse(content=data)
+        return JSONResponse(content=catalog_as_product_mapping(load_catalog()))
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@router.get("/api/vendor-products/details")
+def get_vendor_product_details():
+    """Return product metadata, documentation links, formats, and payload examples."""
+    try:
+        return JSONResponse(content=load_catalog())
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get("/api/vendor-products/{vendor}/{product}/payloads")
+def get_vendor_product_payloads(vendor: str, product: str):
+    """Return payload templates for every supported output format."""
+    try:
+        return JSONResponse(content=get_payload_templates(vendor, product))
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+class CatalogDiscoveryRequest(BaseModel):
+    source_url: str
+
+
+@router.post("/api/vendor-products/discover")
+def discover_vendor_products(request: CatalogDiscoveryRequest):
+    """Pull a normalized vendor/product catalog from a JSON documentation/API endpoint."""
+    try:
+        return JSONResponse(content=load_catalog(request.source_url))
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 @router.post("/api/test-simulator")
 def test_simulator(

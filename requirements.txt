@@ -5,3 +5,7 @@ pydantic
 pytest
 python-multipart
 jinja2
+paramiko
+ncclient
+httpx
+mcp<2

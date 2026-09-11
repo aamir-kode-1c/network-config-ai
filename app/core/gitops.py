@@ -1,6 +1,6 @@
 import os
 import shutil
-from git import Repo
+from git import GitCommandError, Repo
 from datetime import datetime
 
 CONFIGS_DIR = os.path.join(os.path.dirname(__file__), '../../configs')
@@ -10,7 +10,10 @@ if not os.path.exists(CONFIGS_DIR):
     os.makedirs(CONFIGS_DIR)
 
 if not os.path.exists(os.path.join(REPO_DIR, '.git')):
-    Repo.init(REPO_DIR)
+    try:
+        Repo.init(REPO_DIR)
+    except GitCommandError:
+        Repo(REPO_DIR)
 
 
 def commit_config(vendor: str, config: str, description: str = "", product: str = None):
@@ -32,7 +35,10 @@ def commit_config(vendor: str, config: str, description: str = "", product: str 
 def rollback_config(vendor: str, product: str = None):
     safe_product = (product or "generic").replace(" ", "_").lower()
     repo = Repo(REPO_DIR)
-    commits = list(repo.iter_commits('master'))
+    # Repositories created from a modern default branch may use main (or be
+    # detached in a container); do not assume the historical "master" name.
+    revision = repo.head.commit.hexsha
+    commits = list(repo.iter_commits(revision))
     for commit in commits[1:]:  # skip latest
         for item in commit.stats.files:
             if vendor in item and (not product or safe_product in item.lower()):

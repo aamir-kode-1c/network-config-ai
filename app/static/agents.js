@@ -242,7 +242,10 @@ function renderAgentsTable(agents) {
     tbody.innerHTML = "";
     agents.forEach(agent => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${agent.vendor}</td><td>${agent.endpoint}</td><td>${agent.status}</td><td>${agent.lastSync}</td><td>${agent.actions}</td>`;
+        const connected = agent.status === "Connected";
+        const status = `<span class="agent-status ${connected ? "connected" : "disconnected"}">${connected ? "● Connected" : "● Disconnected"}</span>`;
+        const detail = agent.error ? `<small title="${agent.error}">${agent.error}</small>` : (agent.last_check || "Not checked");
+        tr.innerHTML = `<td>${agent.vendor}</td><td>${agent.device || "Unassigned device"}<br><small>${agent.endpoint}</small></td><td>${status}</td><td>${detail}</td><td><button type="button" onclick="loadAgents()">Check now</button></td>`;
         tbody.appendChild(tr);
     });
 }

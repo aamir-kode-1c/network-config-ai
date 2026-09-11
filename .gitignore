@@ -1,0 +1,4 @@
+configs/network_config_manager.db
+configs/vendor_knowledge.db
+__pycache__/
+*.pyc

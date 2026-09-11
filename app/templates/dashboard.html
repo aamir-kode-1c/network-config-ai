@@ -3,76 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-Based Network Config Manager Dashboard</title>
-    <link rel="stylesheet" href="/static/dashboard.css">
+    <title>Network Control Center</title>
+    <link rel="stylesheet" href="/static/dashboard.css?v=20260912">
 </head>
 <body>
-    <nav style="position:absolute;top:16px;right:24px;font-size:17px;">
-        <a href="/agents" style="color:#1976d2;text-decoration:none;font-weight:bold;">Agentic AI Device Connectors</a>
-    </nav>
-    <div class="container">
-        <h1>AI-Based Network Config Manager Dashboard</h1>
-        <form id="configForm" autocomplete="off">
-            <div class="form-group">
-                <label for="vendor">Vendor:
-                    <span class="help" title="Select the network equipment vendor.">&#x1F6C8;</span>
-                </label>
-                <select name="vendor" id="vendor" aria-label="Vendor" required></select>
+    <header class="topbar">
+        <div class="brand"><span class="brand-mark">N</span><div><strong>Network Control Center</strong><small>AI configuration operations</small></div></div>
+        <div class="topbar-actions"><span class="live-dot"></span><span>Production workspace</span><a href="/docs">API docs</a><a href="/agents">Connectors</a></div>
+    </header>
+    <main class="shell">
+        <section class="page-heading">
+            <div><p class="eyebrow">Operations overview</p><h1>Good morning, operator</h1><p class="muted">Review fleet health, pending changes, and configuration activity from one place.</p></div>
+            <div class="heading-actions"><span class="updated">Last checked <strong id="last-updated">just now</strong></span><button class="secondary" id="refresh-dashboard">Refresh</button><button class="primary" onclick="document.getElementById('configForm').scrollIntoView({behavior:'smooth'})">New change</button></div>
+        </section>
+
+        <section class="kpi-grid">
+            <article class="kpi-card"><div class="kpi-label">Fleet health <span class="info">i</span></div><div class="kpi-value" id="fleet-health">—</div><div class="kpi-foot positive" id="fleet-detail">Checking devices...</div></article>
+            <article class="kpi-card"><div class="kpi-label">Change queue <span class="info">i</span></div><div class="kpi-value" id="queue-depth">0</div><div class="kpi-foot">Awaiting approval or deployment</div></article>
+            <article class="kpi-card"><div class="kpi-label">Successful deployments <span class="info">i</span></div><div class="kpi-value" id="deployment-success">—</div><div class="kpi-foot" id="deployment-detail">No deployments recorded</div></article>
+            <article class="kpi-card"><div class="kpi-label">Validation failures <span class="info">i</span></div><div class="kpi-value" id="validation-failures">0</div><div class="kpi-foot">Configuration guardrails</div></article>
+        </section>
+
+        <section class="content-grid">
+            <div class="panel activity-panel">
+                <div class="panel-heading"><div><h2>Change activity</h2><p class="muted">Recent production operations and approvals</p></div><a href="/docs">View audit log</a></div>
+                <div class="empty-state"><div class="empty-icon">✓</div><strong>No recent production changes</strong><span>Approved and deployed changes will appear here.</span><button class="secondary" onclick="document.getElementById('configForm').scrollIntoView({behavior:'smooth'})">Create a change</button></div>
             </div>
-            <div class="form-group">
-                <label for="product">Product:
-                    <span class="help" title="Select the specific product/model.">&#x1F6C8;</span>
-                </label>
-                <select name="product" id="product" aria-label="Product" required></select>
+            <div class="panel health-panel">
+                <div class="panel-heading"><div><h2>System health</h2><p class="muted">Service availability and telemetry</p></div><span class="status-pill healthy" id="system-status">Healthy</span></div>
+                <div class="health-row"><span><i class="health-dot"></i>Control plane</span><strong id="control-plane">Ready</strong></div>
+                <div class="health-row"><span><i class="health-dot"></i>Observability</span><strong id="observability-status">Active</strong></div>
+                <div class="health-row"><span><i class="health-dot"></i>AI tool invocations</span><strong id="tool-invocations">0</strong></div>
+                <div class="trace-note">Trace correlation enabled <code id="trace-preview">X-Trace-ID</code></div>
             </div>
-            <div class="form-group">
-                <label for="format">Config Format:
-                    <span class="help" title="Choose the output configuration format.">&#x1F6C8;</span>
-                </label>
-                <select name="format" id="format" aria-label="Config Format" required>
-                    <option value="cli">CLI</option>
-                    <option value="json">JSON</option>
-                    <option value="xml">XML</option>
-                    <option value="yang">YANG</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="nb_payload">NB API Payload (JSON):
-                    <span class="help" title="Provide the northbound API payload as JSON.">&#x1F6C8;</span>
-                </label>
-                <textarea name="nb_payload" id="nb_payload" rows="6" required placeholder='e.g. {"interface": "eth0", "ip": "10.10.10.1"}'></textarea>
-            </div>
-            <div class="form-group">
-                <label for="description">Description:
-                    <span class="help" title="Optional description for this configuration.">&#x1F6C8;</span>
-                </label>
-                <input type="text" name="description" id="description" placeholder="e.g. Initial config for site X"/>
-            </div>
-            <button type="submit" id="generate-btn">Generate Config</button>
-            <div id="form-feedback" class="feedback" style="display:none;"></div>
-            <div id="form-loading" class="loading" style="display:none;">Loading...</div>
-        </form>
-        <div id="output">
-            
-            <div id="generated-config-block" style="display:none;">
-                <h2>Generated Config</h2>
-                <pre id="generated-config"></pre>
-                <div class="form-group">
-                    <label for="sbi-device">SBI Device/Protocol:
-                        <span class="help" title="Choose the southbound interface device/protocol for simulation.">&#x1F6C8;</span>
-                    </label>
-                    <select id="sbi-device"></select>
+        </section>
+
+        <section class="panel connectors-panel">
+            <div class="panel-heading"><div><h2>Agent connections</h2><p class="muted">Live reachability of vendor connectors and target devices</p></div><button class="secondary" id="refresh-agents">Check now</button></div>
+            <div class="connector-list" id="connector-list"><div class="connector-loading">Checking agent connections...</div></div>
+        </section>
+
+        <section class="panel workspace-panel" id="change-workspace">
+            <div class="panel-heading"><div><p class="eyebrow">Configuration workflow</p><h2>Prepare a network change</h2><p class="muted">Select a target, validate the payload, then generate a reviewable candidate configuration.</p></div><span class="status-pill neutral">Draft</span></div>
+            <form id="configForm" autocomplete="off">
+                <div class="form-grid">
+                    <div class="form-group"><label for="vendor">Vendor</label><select name="vendor" id="vendor" required></select></div>
+                    <div class="form-group"><label for="product">Product</label><select name="product" id="product" required></select></div>
+                    <div class="form-group"><label for="format">Output format</label><select name="format" id="format" required><option value="cli">CLI</option><option value="json">JSON</option><option value="xml">XML</option><option value="yang">YANG</option></select></div>
+                    <div class="form-group"><label for="description">Change description</label><input type="text" name="description" id="description" placeholder="e.g. Add site uplink policy"></div>
                 </div>
-                <button type="button" id="sim-push-btn">Push to Device</button>
-                <span id="sim-push-status" style="margin-left:10px;"></span>
-                <div id="sim-push-result" class="feedback" style="margin-top:10px;display:none;"></div>
+                <div class="form-group"><label for="nb_payload">Northbound payload <span class="label-hint">JSON template is loaded from the vendor catalog</span></label><textarea name="nb_payload" id="nb_payload" rows="7" required placeholder='{"interface": "eth0", "ip": "192.0.2.1"}'></textarea></div>
+                <div class="form-actions"><button type="submit" id="generate-btn" class="primary">Generate candidate</button><div id="form-loading" class="loading">Loading catalog...</div><div id="form-feedback" class="feedback"></div></div>
+            </form>
+            <div id="output">
+                <div id="generated-config-block" style="display:none;">
+                    <div class="result-heading"><div><h3>Candidate configuration</h3><p class="muted">Review this output before submitting it through the approval workflow.</p></div><span class="status-pill warning">Review required</span></div>
+                    <pre id="generated-config"></pre>
+                    <div class="form-grid compact"><div class="form-group"><label for="sbi-device">Deployment transport</label><select id="sbi-device"></select></div><div class="form-group"><label>Safety checks</label><div class="check-list"><span>✓ Schema validation</span><span>✓ Vendor adapter</span><span>✓ Approval gate</span></div></div></div>
+                    <button type="button" id="sim-push-btn" class="secondary">Send to simulator</button><span id="sim-push-status"></span><div id="sim-push-result" class="feedback"></div>
+                </div>
+                <div id="output-error" class="feedback error"></div>
             </div>
-            <div id="output-error" class="feedback error" style="display:none;"></div>
-        </div>
-        
-    </div>
-    
-    
-    <script src="/static/dashboard.js"></script>
+        </section>
+    </main>
+    <script src="/static/dashboard.js?v=20260912"></script>
 </body>
 </html>
