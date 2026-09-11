@@ -1,5 +1,5 @@
 pm-if eth1
   ip 10.20.30.40/24
-  description 'Policy link 1'
-  state up
+  description 'Policy link 2'
+  state down
 end
