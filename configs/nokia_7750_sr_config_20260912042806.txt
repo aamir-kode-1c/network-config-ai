@@ -1,0 +1,5 @@
+configure router interface to-core
+  address 10.1.1.1/24
+  description "x"
+  admin-state up
+exit
