@@ -753,19 +753,91 @@ docker-compose.yml     local service topology
 ## 15. Production hardening roadmap
 
 The current implementation provides a production-oriented foundation, but a
-real deployment should additionally:
+real deployment should implement the following capabilities.
 
-1. Put the API, agents, Prometheus, and Grafana behind TLS and network policy.
-2. Replace in-memory metrics with a durable metrics backend, which Prometheus
-   provides for time-series retention.
-3. Move synchronous deployments to a durable queue and worker model.
-4. Use PostgreSQL or another managed database for high availability.
-5. Integrate enterprise identity, RBAC, and short-lived credentials.
-6. Add policy-as-code checks, maintenance windows, and blast-radius limits.
-7. Add high-availability Prometheus/Grafana and backup/restore procedures.
-8. Add alert routing, on-call escalation, and SLOs.
-9. Test real vendor agents against lab hardware before production rollout.
-10. Maintain signed, versioned vendor adapters and documentation sources.
+### Phase 1: safety and control
+
+- Integrate enterprise OIDC/OAuth2, SSO, MFA, group-to-role mapping, and
+  fine-grained RBAC.
+- Move workflow state from SQLite to PostgreSQL with migrations, backups,
+  connection pooling, and point-in-time recovery.
+- Store credentials in Vault, AWS Secrets Manager, Azure Key Vault, or another
+  external secrets manager. Use short-lived credentials and rotate them.
+- Put the API, agents, Prometheus, and Grafana behind TLS, mTLS where
+  appropriate, network policy, and service allowlists.
+- Add policy-as-code checks for maintenance windows, ticket requirements,
+  protected interfaces, blast radius, command risk, and peer approval.
+- Require configuration snapshots before deployment and support tested,
+  automatic rollback.
+
+### Phase 2: reliable deployment operations
+
+- Move synchronous deployments to a durable queue and worker model using
+  Redis, RabbitMQ, Kafka, or an equivalent managed service.
+- Add retry with exponential backoff, cancellation, dead-letter queues,
+  idempotency keys, per-device concurrency, and vendor rate limits.
+- Track deployment states as `accepted`, `applied`, `verified`, `completed`,
+  `verification_failed`, and `rolled_back`.
+- Add post-deployment verification for interface state, routing neighbors,
+  reachability, configuration checksums, Wi-Fi service health, and device
+  resource thresholds.
+- Add maintenance windows, scheduled changes, staged rollouts, canary groups,
+  and automatic pause on abnormal failure rates.
+- Add contract tests between the orchestrator and each vendor agent, including
+  transport failure and rollback scenarios.
+
+### Phase 3: fleet discovery and compliance
+
+- Extend discovery with ARP/NDP, DHCP leases, SNMP, SSH banner detection,
+  HTTPS/TLS fingerprints, LLDP/CDP, and wireless-controller APIs.
+- Correlate candidates by MAC address, serial number, hostname, and management
+  address, then require approval before inventory registration.
+- Add scheduled configuration drift detection against the source of truth.
+- Add compliance policies, baseline checks, exception management, evidence
+  export, and remediation proposals.
+- Record discovery history, credential validation, scan authorization, and
+  onboarding decisions in the audit trail.
+
+### Phase 4: observability and incident response
+
+- Adopt OpenTelemetry tracing across the API, workers, agents, and devices.
+- Add deployment duration histograms, queue latency, agent request latency,
+  retries, verification failures, rollback duration, discovery duration, and
+  RAG/MCP latency metrics.
+- Use structured JSON logs with centralized retention through Loki, Elastic,
+  or an equivalent platform.
+- Add PagerDuty, ServiceNow, Jira, Slack, Teams, email, and webhook alert
+  integrations.
+- Define and measure SLOs such as API availability, deployment completion
+  time, agent health, audit coverage, and failed-deployment alert delivery.
+
+### Phase 5: scale and enterprise operation
+
+- Run multiple orchestrator and worker replicas behind a load balancer.
+- Add highly available PostgreSQL, queue, Prometheus, and Grafana services,
+  with disaster recovery and restore exercises.
+- Add tenant/project isolation, per-tenant inventories and secrets, quotas,
+  policies, dashboards, and audit trails.
+- Integrate GitOps pull-request approvals, signed commits, branch protection,
+  environment promotion, and deployment status checks.
+- Add blue/green or rolling releases, capacity planning, and operational
+  runbooks.
+
+### AI and RAG governance
+
+- Restrict AI output to typed intent schemas and vendor command allowlists.
+- Require syntax validation, policy evaluation, risk scoring, citations, and
+  human approval for every production change.
+- Add dangerous-command detection, prompt-injection filtering, document trust
+  levels, provenance tracking, offline evaluation datasets, and regression
+  tests for generated configurations.
+
+The recommended next production milestone is:
+
+```text
+PostgreSQL + durable deployment queue + policy checks
+    + pre-change backup + post-change verification + automatic rollback
+```
 
 ## 16. License and contributors
 
