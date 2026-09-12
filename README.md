@@ -179,7 +179,7 @@ The FastAPI service in `app/` provides:
 - Configuration generation.
 - Agent registration, reachability probes, and push routing.
 - Authenticated production change APIs.
-- Device inventory APIs.
+- Device inventory APIs and private-network discovery.
 - RAG ingestion and retrieval APIs.
 - Health, readiness, trace, and Prometheus-compatible metrics endpoints.
 
@@ -312,6 +312,7 @@ docker compose ps
 Open:
 
 - Dashboard: [http://localhost:8000/dashboard](http://localhost:8000/dashboard)
+- Device discovery: [http://localhost:8000/discovery](http://localhost:8000/discovery)
 - API documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 - Agent connectors: [http://localhost:8000/agents](http://localhost:8000/agents)
 - Metrics: [http://localhost:8000/metrics](http://localhost:8000/metrics)
@@ -354,6 +355,50 @@ The dashboard also displays:
 - Live agent reachability.
 - Agent endpoint and target device.
 - Trace correlation status.
+
+### Network discovery and inventory onboarding
+
+Open the [Device discovery page](http://localhost:8000/discovery) to scan an
+approved private, loopback, or link-local CIDR range for reachable devices.
+The page checks selected management ports, displays the reachable addresses,
+and lets an operator select devices for inventory onboarding.
+
+Discovery is intentionally read-only. It does not configure devices and does
+not add results to inventory automatically. The operator must review the
+results, provide vendor and product values, and click **Add selected to
+inventory**.
+
+The discovery workflow is limited to 256 host addresses per scan and supports
+ports such as SSH (`22`), HTTP (`80`), HTTPS (`443`), and NETCONF (`830`):
+
+```text
+Approved CIDR -> read-only port probes -> review reachable devices
+             -> select devices -> add to inventory
+```
+
+The corresponding APIs are:
+
+- `POST /api/inventory/discover`
+- `POST /api/inventory/add`
+- `GET /api/inventory/summary`
+
+Example discovery request:
+
+```powershell
+$body = @{
+  cidr = "192.168.1.0/24"
+  ports = @(22, 80, 443, 830)
+  timeout = 0.35
+} | ConvertTo-Json
+
+Invoke-RestMethod http://localhost:8000/api/inventory/discover `
+  -Method Post -ContentType "application/json" -Body $body
+```
+
+Discovered records use credential references rather than storing passwords.
+Production deployments should additionally enforce network authorization,
+SSH host-key or TLS certificate verification, external secret management,
+scan auditing, and duplicate-device reconciliation before onboarding.
 
 ## 7. Production change workflow
 
@@ -549,6 +594,7 @@ The orchestrator exposes:
 production_change_deployments_total{mode,agent,vendor,device_id,status}
 simulated_deployments_total{agent,vendor,device_id,transport,status}
 test_cases_total{case,status}
+agent_connected_devices{agent,vendor,device_id,status}
 configuration_commits_total{vendor,product,status}
 device_reachability_total{device_id,status}
 config_validation_failures_total{vendor,product}
