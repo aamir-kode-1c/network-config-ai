@@ -40,19 +40,132 @@ configuration and sends it through a vendor connector. Every production change
 is authenticated, persisted, approval-gated, and observable.
 
 ```mermaid
-flowchart LR
-    User[Operator / AI client] --> UI[Operations dashboard]
-    UI --> API[FastAPI orchestrator]
-    API --> Catalog[Vendor catalog and adapters]
-    API --> Workflow[Change workflow and approvals]
-    Workflow --> Git[GitOps config history]
-    Workflow --> Agents[Vendor agents]
-    Agents --> Devices[Physical devices or simulators]
-    API --> RAG[Vendor documentation RAG]
-    API --> Metrics[/metrics]
-    Metrics --> Prometheus[Prometheus]
-    Prometheus --> Grafana[Grafana dashboards]
-    API --> Alerts[Structured logs and optional webhook]
+flowchart TB
+    subgraph Northbound["Northbound users and interfaces"]
+        Operator[Operator / network engineer]
+        AIClient[AI client / MCP consumer]
+        Dashboard[Network Control Center<br/>Dashboard, connectors, tests]
+        APIClient[REST API / OpenAPI]
+        Operator --> Dashboard
+        AIClient --> APIClient
+    end
+
+    subgraph ControlPlane["FastAPI orchestrator :8000"]
+        Routes[API routes<br/>inventory, changes, agents, RAG]
+        Intent[Normalized network intent]
+        Validate[Validation and policy checks]
+        Approval[Approval workflow<br/>RBAC, ticket, self-approval guard]
+        Render[Vendor catalog and configuration adapters]
+        Persist[(SQLite workflow database<br/>changes, devices, audit events)]
+        GitOps[(GitOps configuration history)]
+        Routes --> Intent --> Validate --> Approval --> Render
+        Approval <--> Persist
+        Render --> GitOps
+    end
+
+    subgraph Southbound["Southbound agent layer"]
+        Cisco[Cisco agent :5003]
+        Nokia[Nokia agent :5001]
+        Ericsson[Ericsson agent :5004]
+        Openet[Openet agent :5005]
+    end
+
+    subgraph Devices["Managed devices and lab targets"]
+        CiscoDevice[Cisco IOS-like simulator :2222]
+        NokiaDevices[Nokia devices]
+        EricssonDevices[Ericsson devices]
+        OpenetDevices[Openet devices]
+        Inventory[(50-device lab inventory<br/>10 devices per vendor)]
+    end
+
+    subgraph Knowledge["Knowledge and AI tools"]
+        Catalog[(vendor_products.json)]
+        RAG[Documentation RAG<br/>ingest, chunk, embed, retrieve]
+        MCP[MCP vendor-products server]
+        Docs[Vendor documentation]
+        Docs --> RAG
+        Catalog --> MCP
+        RAG --> MCP
+    end
+
+    subgraph Observability["Observability and operations"]
+        Metrics[/metrics<br/>deployment, reachability, tests, queue]
+        Prometheus[Prometheus :9090]
+        ChangesDashboard[Network Automation Changes<br/>Grafana dashboard]
+        DeviceDashboard[Agent Device KPIs<br/>Grafana dashboard]
+        Alerts[Structured logs<br/>optional alert webhook]
+        Metrics --> Prometheus
+        Prometheus --> ChangesDashboard
+        Prometheus --> DeviceDashboard
+        Metrics --> Alerts
+    end
+
+    Dashboard --> Routes
+    APIClient --> Routes
+    Routes --> Inventory
+    Routes --> Catalog
+    Routes --> RAG
+    MCP --> Routes
+    Render --> Cisco
+    Render --> Nokia
+    Render --> Ericsson
+    Render --> Openet
+    Cisco --> CiscoDevice
+    Nokia --> NokiaDevices
+    Ericsson --> EricssonDevices
+    Openet --> OpenetDevices
+    Inventory -. device selection .-> Render
+    Routes --> Metrics
+    Cisco -. reachability and deployment status .-> Metrics
+    Nokia -. reachability and deployment status .-> Metrics
+    Ericsson -. reachability and deployment status .-> Metrics
+    Openet -. reachability and deployment status .-> Metrics
+
+    classDef interface fill:#e8f0ff,stroke:#2864dc,color:#162235
+    classDef control fill:#eaf8f1,stroke:#16845b,color:#162235
+    classDef southbound fill:#fff4df,stroke:#a86b00,color:#162235
+    classDef observability fill:#f3eaff,stroke:#7a4bb3,color:#162235
+    classDef storage fill:#f5f5f5,stroke:#718096,color:#162235
+    class Operator,AIClient,Dashboard,APIClient interface
+    class Routes,Intent,Validate,Approval,Render control
+    class Cisco,Nokia,Ericsson,Openet,CiscoDevice,NokiaDevices,EricssonDevices,OpenetDevices southbound
+    class Metrics,Prometheus,ChangesDashboard,DeviceDashboard,Alerts observability
+    class Persist,GitOps,Inventory,Catalog storage
+```
+
+### Completed change execution path
+
+The production change path is approval-gated and produces both an auditable
+workflow record and operational telemetry:
+
+```mermaid
+sequenceDiagram
+    actor Operator
+    participant UI as Dashboard / API
+    participant API as Orchestrator
+    participant DB as Change store
+    participant Approver
+    participant Agent as Vendor agent
+    participant Device as Device or simulator
+    participant Prom as Prometheus
+    participant Grafana
+
+    Operator->>UI: Submit normalized change intent
+    UI->>API: POST /api/v1/changes
+    API->>API: Validate intent and render candidate
+    API->>DB: Store pending_approval change and audit event
+    API-->>UI: Candidate preview and change ID
+    Approver->>API: Approve as separate actor
+    API->>DB: Store approved state and audit event
+    Operator->>API: Deploy approved change
+    API->>DB: Reserve deploying state
+    API->>Agent: Push candidate through vendor transport
+    Agent->>Device: Apply configuration
+    Device-->>Agent: Deployment result
+    Agent-->>API: Success or failure
+    API->>DB: Store completed/deployment_failed state
+    API->>Prom: Emit deployment and reachability metrics
+    Prom-->>Grafana: Update change and device KPI dashboards
 ```
 
 ## 3. Architecture and components
