@@ -315,6 +315,7 @@ Open:
 - Device discovery: [http://localhost:8000/discovery](http://localhost:8000/discovery)
 - API documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 - Agent connectors: [http://localhost:8000/agents](http://localhost:8000/agents)
+- MCP catalog: [http://localhost:8000/mcp](http://localhost:8000/mcp)
 - Metrics: [http://localhost:8000/metrics](http://localhost:8000/metrics)
 - Prometheus: [http://localhost:9090](http://localhost:9090)
 - Grafana: [http://localhost:3000](http://localhost:3000)
@@ -355,6 +356,36 @@ The dashboard also displays:
 - Live agent reachability.
 - Agent endpoint and target device.
 - Trace correlation status.
+
+### MCP vendor catalog page
+
+Open the [MCP catalog page](http://localhost:8000/mcp) to browse the normalized
+vendor catalog used by the MCP server and configuration workflow. Select a
+vendor to display **all products** currently available for that vendor, then
+select a product to inspect:
+
+- Product metadata and documentation links.
+- Supported CLI, JSON, XML, and YANG formats.
+- Payload templates for each supported format.
+- Indexed vendor documentation citations through the search panel.
+
+The page is backed by these read-only catalog APIs:
+
+- `GET /api/mcp/catalog`: all vendors and their complete product lists.
+- `GET /api/mcp/catalog/{vendor}`: every product for one vendor.
+- `GET /api/mcp/catalog/{vendor}/{product}`: product metadata.
+- `GET /api/mcp/catalog/{vendor}/{product}/payloads`: format templates.
+- `POST /api/mcp/documentation/search`: vendor documentation retrieval.
+
+The local MCP server remains available over stdio:
+
+```powershell
+python -m mcp_server.vendor_products_server
+```
+
+Its `list_vendors_and_products` tool accepts an optional vendor filter, so an
+MCP client can request either the complete catalog or all products for one
+vendor.
 
 ### Network discovery and inventory onboarding
 
