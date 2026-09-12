@@ -151,6 +151,14 @@ def agents_page(request: Request):
         context={"request": request},
     )
 
+@app.get("/discovery", response_class=HTMLResponse)
+def discovery_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="discovery.html",
+        context={"request": request},
+    )
+
 @app.get("/tests", response_class=HTMLResponse)
 def tests_page(request: Request):
     return templates.TemplateResponse(
