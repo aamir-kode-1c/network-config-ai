@@ -1,0 +1,7 @@
+{
+  "interface": "eth0",
+  "ip": "192.0.2.1",
+  "subnet": "24",
+  "admin_state": "up",
+  "product": "7750 SR"
+}

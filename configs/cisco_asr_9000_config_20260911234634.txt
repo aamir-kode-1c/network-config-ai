@@ -1,0 +1,5 @@
+interface GigabitEthernet0/5
+  ip address 192.0.2.55 255.255.255.0
+  description 'metrics test'
+  no shutdown
+exit

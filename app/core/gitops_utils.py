@@ -1,5 +1,5 @@
 import os
-from git import Repo
+from git import GitCommandError, Repo
 from datetime import datetime
 
 CONFIGS_DIR = os.path.join(os.path.dirname(__file__), '../../configs')
@@ -17,8 +17,15 @@ def extract_product_from_filename(filename):
     return ""
 
 def get_config_history(vendor: str, product: str = None):
+    if not os.path.exists(os.path.join(REPO_DIR, '.git')):
+        try:
+            Repo.init(REPO_DIR)
+        except GitCommandError:
+            Repo(REPO_DIR)
     repo = Repo(REPO_DIR)
     history = []
+    if not repo.head.is_valid():
+        return history
     safe_product = (product or "").replace(" ", "_").lower()
     for commit in repo.iter_commits('master'):
         for item in commit.stats.files:
@@ -40,7 +47,11 @@ def get_config_content(filepath: str, commit: str = None):
             return f.read()
     # Try to get from git if not present on disk
     if commit:
-        from git import Repo
+        if not os.path.exists(os.path.join(REPO_DIR, '.git')):
+            try:
+                Repo.init(REPO_DIR)
+            except GitCommandError:
+                Repo(REPO_DIR)
         repo = Repo(REPO_DIR)
         # Always use path relative to repo root (should be configs/filename)
         repo_root = repo.git.rev_parse('--show-toplevel')

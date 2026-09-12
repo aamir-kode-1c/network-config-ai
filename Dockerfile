@@ -7,6 +7,7 @@ WORKDIR /app
 # Install system dependencies (if needed)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for caching
@@ -23,5 +24,5 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Start the FastAPI app with multiple workers
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--log-level", "info"]
+# Start the FastAPI app with one worker so Git repository initialization is serialized.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]

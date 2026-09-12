@@ -10,7 +10,11 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
     # Show a form for NB API input and a section for output/config
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard.html",
+        context={"request": request},
+    )
 
 @router.post("/dashboard", response_class=HTMLResponse)
 def dashboard_post(request: Request):
