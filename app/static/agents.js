@@ -55,22 +55,70 @@ const vendorSamples = {
     }, null, 2)
 };
 
+let inventoryByVendor = {};
+
+function populateNbiDevices(vendor) {
+    const deviceSelect = document.getElementById("nbi-device");
+    const productInput = document.getElementById("nbi-product");
+    const detail = document.getElementById("nbi-device-detail");
+    const devices = inventoryByVendor[vendor] || [];
+    deviceSelect.innerHTML = "";
+    if (!devices.length) {
+        deviceSelect.innerHTML = '<option value="">No registered devices</option>';
+        productInput.value = "";
+        detail.textContent = "No registered inventory devices for this vendor.";
+        return;
+    }
+    devices.forEach((device) => {
+        const option = document.createElement("option");
+        option.value = device.device_id;
+        option.textContent = `${device.device_id} - ${device.product} (${device.management_address})`;
+        option.dataset.product = device.product;
+        option.dataset.address = device.management_address;
+        deviceSelect.appendChild(option);
+    });
+    const selected = deviceSelect.options[0];
+    productInput.value = selected.dataset.product;
+    detail.textContent = `${devices.length} registered device(s); selected target: ${selected.value} at ${selected.dataset.address}`;
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     // NBI Payload Generator enhancements
     const nbiVendor = document.getElementById("nbi-vendor");
     const nbiProduct = document.getElementById("nbi-product");
     const pushVendor = document.getElementById("push-vendor");
     const nbiPayload = document.getElementById("nbi-payload");
+    const nbiDevice = document.getElementById("nbi-device");
+
+    fetch("/api/inventory/summary")
+        .then(response => response.json())
+        .then(data => {
+            inventoryByVendor = Object.fromEntries(data.vendors.map(group => [group.vendor, group.devices]));
+            populateNbiDevices(nbiVendor.value);
+        })
+        .catch(() => {
+            nbiDevice.innerHTML = '<option value="">Inventory unavailable</option>';
+        });
 
     // Auto-fill product and sync vendor dropdowns
     nbiVendor.addEventListener("change", function() {
         const vendor = this.value;
         nbiProduct.value = vendorProducts[vendor] ? vendorProducts[vendor][0] : "";
         pushVendor.value = vendor;
+        populateNbiDevices(vendor);
     });
     pushVendor.addEventListener("change", function() {
         nbiVendor.value = this.value;
         nbiProduct.value = vendorProducts[this.value] ? vendorProducts[this.value][0] : "";
+        populateNbiDevices(this.value);
+    });
+
+    nbiDevice.addEventListener("change", function() {
+        const selected = this.options[this.selectedIndex];
+        if (selected && selected.dataset.product) {
+            nbiProduct.value = selected.dataset.product;
+            document.getElementById("nbi-device-detail").textContent = `Selected target: ${selected.value} at ${selected.dataset.address}`;
+        }
     });
 
     // Insert sample payload

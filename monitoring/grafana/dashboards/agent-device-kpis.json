@@ -1,0 +1,82 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Connected device records",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "count(agent_connected_devices{status=\"connected\"}) or vector(0)", "legendFormat": "devices", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Reachability successes",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "sum(agent_connected_devices{status=\"connected\"}) or vector(0)", "legendFormat": "connected", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Reachability failures",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "targets": [{"expr": "sum(agent_connected_devices{status=\"disconnected\"}) or vector(0)", "legendFormat": "disconnected", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Change queue depth",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "targets": [{"expr": "change_queue_depth or vector(0)", "legendFormat": "queued", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}, {"color": "red", "value": 10}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "timeseries",
+      "title": "Device reachability by status",
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 5},
+      "targets": [
+        {"expr": "sum by (status) (agent_connected_devices)", "legendFormat": "{{status}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"lineWidth": 2, "fillOpacity": 15}}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "timeseries",
+      "title": "Agent deployment activity",
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 5},
+      "targets": [
+        {"expr": "sum by (agent, status) (rate(simulated_deployments_total[5m])) or sum by (agent, status) (rate(production_change_deployments_total[5m]))", "legendFormat": "{{agent}} {{status}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"lineWidth": 2, "fillOpacity": 15}}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "table",
+      "title": "Device and agent KPI detail",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 14},
+      "targets": [
+        {"expr": "agent_connected_devices", "format": "table", "instant": true, "refId": "A"},
+        {"expr": "sum by (agent, vendor, device_id, status) (simulated_deployments_total) or sum by (agent, vendor, device_id, status) (production_change_deployments_total)", "format": "table", "instant": true, "refId": "B"}
+      ],
+      "options": {"showHeader": true}
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "time": {"from": "now-24h", "to": "now"},
+  "title": "Agent Device KPIs",
+  "uid": "agent-device-kpis",
+  "version": 1
+}

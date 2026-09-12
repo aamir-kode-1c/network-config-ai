@@ -8,6 +8,8 @@ from app.api.history import router as history_router
 from app.api.agents import router as agents_router
 from app.api.production import router as production_router
 from app.api.rag import router as rag_router
+from app.api.test_runner import router as test_runner_router
+from app.api.inventory import router as inventory_router
 from app.core.config_generator import generate_config
 from app.core.gitops import commit_config
 from app.core.gitops_utils import get_config_history, get_config_content
@@ -53,6 +55,8 @@ app.include_router(history_router)
 app.include_router(agents_router)
 app.include_router(production_router)
 app.include_router(rag_router)
+app.include_router(test_runner_router)
+app.include_router(inventory_router)
 
 
 @app.get("/health/live", tags=["health"])
@@ -76,6 +80,9 @@ def readiness():
 
 @app.get("/metrics", response_class=PlainTextResponse, tags=["health"])
 def metrics():
+    # Refresh agent-backed device gauges on each Prometheus scrape.
+    from app.api.agents import list_agents
+    list_agents()
     lines = [
         "# HELP config_manager_uptime_seconds Process uptime in seconds",
         "# TYPE config_manager_uptime_seconds gauge",
@@ -141,6 +148,14 @@ def agents_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="agents.html",
+        context={"request": request},
+    )
+
+@app.get("/tests", response_class=HTMLResponse)
+def tests_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="test_runner.html",
         context={"request": request},
     )
 

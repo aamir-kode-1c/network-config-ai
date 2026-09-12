@@ -54,6 +54,35 @@
       ],
       "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true}, "renameByName": {"Value": "Changes"}}}],
       "options": {"showHeader": true}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Test cases passed",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 21},
+      "targets": [{"expr": "(sum(test_cases_total{status=\"passed\"}) or vector(0))", "legendFormat": "passed", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Test cases failed",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 21},
+      "targets": [{"expr": "(sum(test_cases_total{status=\"failed\"}) or vector(0))", "legendFormat": "failed", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "table",
+      "title": "Test results by case",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 21},
+      "targets": [
+        {"expr": "sum by (case, status) (test_cases_total)", "format": "table", "instant": true, "refId": "A"}
+      ],
+      "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true}, "renameByName": {"Value": "Runs"}}}],
+      "options": {"showHeader": true}
     }
   ],
   "refresh": "15s",

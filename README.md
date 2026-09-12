@@ -293,6 +293,22 @@ $env:CONFIG_MANAGER_DEPLOYMENT_MODE = "simulated"
 docker compose up -d --build
 ```
 
+### Seed a lab inventory
+
+Create an idempotent lab inventory with at least ten devices for every
+supported vendor:
+
+```powershell
+python seed_devices.py
+```
+
+The default creates 50 records across Cisco, Nokia, Ericsson, Huawei, and
+Openet. Device IDs use the `lab-<vendor>-device-01` convention, products are
+selected round-robin from the vendor catalog, and management addresses use the
+documentation-only `192.0.2.0/24` range. Lab records set
+`hostkey_verify=false`; production records must use real pinned host keys.
+Only credential environment-variable names are stored.
+
 ## 8. Authentication and secrets
 
 Configure API keys before using production mutations:
@@ -347,6 +363,22 @@ Customize the test:
 ```powershell
 python cli_test.py --interface GigabitEthernet0/3 --ip 192.0.2.20 --subnet 255.255.255.0
 ```
+
+### RAG-backed current-configuration change test
+
+Run the complete read, index, change, and push workflow:
+
+```powershell
+python cisco_rag_change_test.py
+```
+
+The script reads `show running-config` through the Cisco agent, stores the
+observed configuration in `configs/vendor_knowledge.db` with a
+`cisco-simulator://` citation, generates a Cisco ASR 9000 candidate, and pushes
+the candidate back through the agent to the simulator. Use `--no-push` to stop
+after candidate generation. The simulator retains configuration commands for
+the lifetime of its container and exposes them through the agent's
+`/current-config` endpoint.
 
 ## 10. Testing strategy
 
@@ -403,6 +435,7 @@ The orchestrator exposes:
 ```text
 production_change_deployments_total{mode,agent,vendor,device_id,status}
 simulated_deployments_total{agent,vendor,device_id,transport,status}
+test_cases_total{case,status}
 configuration_commits_total{vendor,product,status}
 device_reachability_total{device_id,status}
 config_validation_failures_total{vendor,product}

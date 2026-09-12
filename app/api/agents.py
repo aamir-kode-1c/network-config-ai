@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from typing import Dict, List
 import time
 from urllib.request import urlopen
+from app.core.observability import set_gauge
 
 router = APIRouter()
 
@@ -24,6 +25,16 @@ def _probe_agent(vendor: str, info: Dict) -> Dict:
     except OSError as exc:
         status, error = "Disconnected", str(exc)
     info.update({"status": status, "last_check": checked_at, "error": error})
+    set_gauge(
+        "agent_connected_devices",
+        1 if status == "Connected" else 0,
+        {
+            "agent": f"{vendor}-agent",
+            "device_id": info.get("device", "unassigned"),
+            "status": status.lower(),
+            "vendor": vendor,
+        },
+    )
     return {"vendor": vendor, **info}
 
 @router.post("/api/agents/register")

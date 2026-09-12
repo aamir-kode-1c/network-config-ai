@@ -9,7 +9,7 @@
 <body>
     <header class="topbar">
         <div class="brand"><span class="brand-mark">N</span><div><strong>Network Control Center</strong><small>AI configuration operations</small></div></div>
-        <div class="topbar-actions"><span class="live-dot"></span><span>Production workspace</span><a href="/docs">API docs</a><a href="/agents">Connectors</a></div>
+        <div class="topbar-actions"><span class="live-dot"></span><span>Production workspace</span><a href="/docs">API docs</a><a href="/agents">Connectors</a><a href="/tests">Tests</a><a href="http://localhost:3000/d/network-automation-changes/network-automation-changes?orgId=1&amp;from=now-24h&amp;to=now&amp;refresh=15s" target="_blank" rel="noopener noreferrer">Grafana</a></div>
     </header>
     <main class="shell">
         <section class="page-heading">
@@ -22,6 +22,7 @@
             <article class="kpi-card"><div class="kpi-label">Change queue <span class="info">i</span></div><div class="kpi-value" id="queue-depth">0</div><div class="kpi-foot">Awaiting approval or deployment</div></article>
             <article class="kpi-card"><div class="kpi-label">Successful deployments <span class="info">i</span></div><div class="kpi-value" id="deployment-success">—</div><div class="kpi-foot" id="deployment-detail">No deployments recorded</div></article>
             <article class="kpi-card"><div class="kpi-label">Validation failures <span class="info">i</span></div><div class="kpi-value" id="validation-failures">0</div><div class="kpi-foot">Configuration guardrails</div></article>
+            <article class="kpi-card"><div class="kpi-label">Test cases <span class="info">i</span></div><div class="kpi-value" id="test-success">—</div><div class="kpi-foot" id="test-detail">No test runs recorded</div></article>
         </section>
 
         <section class="content-grid">
@@ -43,12 +44,18 @@
             <div class="connector-list" id="connector-list"><div class="connector-loading">Checking agent connections...</div></div>
         </section>
 
+        <section class="panel inventory-panel">
+            <div class="panel-heading"><div><h2>Managed device inventory</h2><p class="muted">Registered lab and production targets by vendor</p></div><strong id="inventory-total">0 devices</strong></div>
+            <div class="inventory-list" id="inventory-list"><div class="connector-loading">Loading inventory...</div></div>
+        </section>
+
         <section class="panel workspace-panel" id="change-workspace">
             <div class="panel-heading"><div><p class="eyebrow">Configuration workflow</p><h2>Prepare a network change</h2><p class="muted">Select a target, validate the payload, then generate a reviewable candidate configuration.</p></div><span class="status-pill neutral">Draft</span></div>
             <form id="configForm" autocomplete="off">
                 <div class="form-grid">
                     <div class="form-group"><label for="vendor">Vendor</label><select name="vendor" id="vendor" required></select></div>
                     <div class="form-group"><label for="product">Product</label><select name="product" id="product" required></select></div>
+                    <div class="form-group"><label for="inventory-device">Inventory device</label><select name="inventory-device" id="inventory-device" required></select><span class="label-hint">All registered devices for this vendor.</span></div>
                     <div class="form-group"><label for="format">Output format</label><select name="format" id="format" required><option value="cli">CLI</option><option value="json">JSON</option><option value="xml">XML</option><option value="yang">YANG</option></select></div>
                     <div class="form-group"><label for="description">Change description</label><input type="text" name="description" id="description" placeholder="e.g. Add site uplink policy"></div>
                 </div>
@@ -59,13 +66,13 @@
                 <div id="generated-config-block" style="display:none;">
                     <div class="result-heading"><div><h3>Candidate configuration</h3><p class="muted">Review this output before submitting it through the approval workflow.</p></div><span class="status-pill warning">Review required</span></div>
                     <pre id="generated-config"></pre>
-                    <div class="form-grid compact"><div class="form-group"><label for="sbi-device">Deployment transport</label><select id="sbi-device"></select></div><div class="form-group"><label>Safety checks</label><div class="check-list"><span>✓ Schema validation</span><span>✓ Vendor adapter</span><span>✓ Approval gate</span></div></div></div>
+                    <div class="form-grid compact"><div class="form-group"><label for="sbi-device">Deployment target</label><select id="sbi-device"></select><span class="label-hint">Managed devices are loaded from inventory; simulator transports are available for local tests.</span></div><div class="form-group"><label>Safety checks</label><div class="check-list"><span>✓ Schema validation</span><span>✓ Vendor adapter</span><span>✓ Approval gate</span></div></div></div>
                     <button type="button" id="sim-push-btn" class="secondary">Send to simulator</button><span id="sim-push-status"></span><div id="sim-push-result" class="feedback"></div>
                 </div>
                 <div id="output-error" class="feedback error"></div>
             </div>
         </section>
     </main>
-    <script src="/static/dashboard.js?v=20260912"></script>
+    <script src="/static/dashboard.js?v=20260917"></script>
 </body>
 </html>

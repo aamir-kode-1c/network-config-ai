@@ -7,6 +7,10 @@ import threading
 import paramiko
 
 
+CONFIG_LOCK = threading.Lock()
+RUNNING_CONFIG: list[str] = []
+
+
 class Server(paramiko.ServerInterface):
     def __init__(self):
         self.event = threading.Event()
@@ -52,6 +56,15 @@ def handle_client(client):
                 channel.close()
                 transport.close()
                 return
+            if command.lower() in {"show running-config", "show run"}:
+                with CONFIG_LOCK:
+                    current_config = list(RUNNING_CONFIG)
+                channel.send("\r\n".join(current_config) + ("\r\n" if current_config else ""))
+                channel.send("Router# ")
+                continue
+            with CONFIG_LOCK:
+                if command not in RUNNING_CONFIG:
+                    RUNNING_CONFIG.append(command)
             channel.send(f"{command}\\r\\n")
             channel.send("Router# ")
     transport.close()

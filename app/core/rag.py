@@ -17,6 +17,8 @@ import uuid
 from html.parser import HTMLParser
 from typing import Any
 
+from app.core.observability import increment
+
 
 RAG_DB_PATH = os.getenv("RAG_DB_PATH", os.path.join("configs", "vendor_knowledge.db"))
 EMBEDDING_DIMENSIONS = 256
@@ -137,6 +139,37 @@ def ingest_document(vendor: str, product: str, source_url: str, version: str = "
     db.commit()
     db.close()
     return {"document_id": document_id, "status": "indexed", "chunks": len(chunks), "citation": {"url": url, "version": version}}
+
+
+def ingest_text(vendor: str, product: str, text: str, source_url: str, version: str = "latest") -> dict[str, Any]:
+    increment("ai_tool_invocations_total", {"tool": "local_knowledge_ingest"})
+    if not text.strip():
+        raise ValueError("Document content must not be empty")
+    digest = hashlib.sha256(text.encode()).hexdigest()
+    db = _db()
+    existing = db.execute(
+        "SELECT id FROM rag_documents WHERE vendor=? AND product=? AND version=? AND content_hash=?",
+        (vendor.lower(), product, version, digest),
+    ).fetchone()
+    if existing:
+        db.close()
+        return {"document_id": existing["id"], "status": "unchanged", "chunks": 0, "citation": {"url": source_url, "version": version}}
+    document_id = f"doc-{uuid.uuid4().hex[:12]}"
+    db.execute(
+        "INSERT INTO rag_documents(id,vendor,product,source_url,version,content_hash) VALUES(?,?,?,?,?,?)",
+        (document_id, vendor.lower(), product, source_url, version, digest),
+    )
+    chunks = _chunks(text)
+    for index, content in enumerate(chunks):
+        chunk_id = f"{document_id}-{index}"
+        db.execute(
+            "INSERT INTO rag_chunks(id,document_id,chunk_index,content,embedding) VALUES(?,?,?,?,?)",
+            (chunk_id, document_id, index, content, json.dumps(_embedding(content))),
+        )
+        db.execute("INSERT INTO rag_chunks_fts(id,content) VALUES(?,?)", (chunk_id, content))
+    db.commit()
+    db.close()
+    return {"document_id": document_id, "status": "indexed", "chunks": len(chunks), "citation": {"url": source_url, "version": version}}
 
 
 def search_documents(query: str, vendor: str | None = None, product: str | None = None, limit: int = 5) -> list[dict[str, Any]]:

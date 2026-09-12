@@ -13,6 +13,36 @@ class ConfigPush(BaseModel):
     token: str | None = None
 
 
+def _connect():
+    device_ip = os.getenv("CISCO_DEVICE_HOST", "cisco-simulator")
+    username = os.getenv("CISCO_DEVICE_USERNAME", "admin")
+    password = os.getenv("CISCO_DEVICE_PASSWORD", "cisco")
+    port = int(os.getenv("CISCO_DEVICE_PORT", "22"))
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(device_ip, port=port, username=username, password=password, timeout=10)
+    shell = ssh.invoke_shell()
+    shell.settimeout(5)
+    shell.recv(4096)
+    return ssh, shell
+
+
+@app.get("/current-config")
+def current_config():
+    ssh = None
+    try:
+        ssh, shell = _connect()
+        shell.send("show running-config\n")
+        output = shell.recv(16384).decode(errors="replace")
+        return {"status": "success", "config": output}
+    except Exception as exc:
+        print(f"[Cisco Agent] Read exception: {exc}")
+        return {"status": "error", "message": str(exc)}
+    finally:
+        if ssh:
+            ssh.close()
+
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request, exc):
     print(f"[Agent Error] Exception: {exc}")

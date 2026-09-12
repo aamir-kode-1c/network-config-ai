@@ -3,6 +3,7 @@
 
 console.log("dashboard.js loaded");
 let vendorProducts = {};
+let managedInventory = {};
 let sbiDevices = {
     nokia: [
         { value: "nokia_7750sr_ssh", label: "Nokia 7750 SR (SSH/CLI)" },
@@ -51,6 +52,31 @@ function refreshAgentConnections() {
         });
 }
 
+function refreshInventory() {
+    const list = document.getElementById("inventory-list");
+    fetch("/api/inventory/summary")
+        .then(response => response.json())
+        .then(data => {
+            managedInventory = Object.fromEntries(data.vendors.map(group => [group.vendor, group.devices]));
+            document.getElementById("inventory-total").textContent = `${data.total} devices`;
+            list.innerHTML = data.vendors.map(group => `
+                <details class="inventory-vendor">
+                    <summary><strong>${group.vendor}</strong><span>${group.count} devices</span></summary>
+                    <div class="inventory-devices">${group.devices.map(device => `<span title="${device.management_address}">${device.device_id}<small>${device.product}</small></span>`).join("")}</div>
+                </details>
+            `).join("");
+            const vendor = document.getElementById("vendor");
+            if (vendor && vendor.value) {
+                populateProducts(vendor.value);
+                populateInventoryDevices(vendor.value);
+                populateSbiDevices(vendor.value);
+            }
+        })
+        .catch(() => {
+            list.innerHTML = '<div class="connector-error">Unable to load managed inventory.</div>';
+        });
+}
+
 function showFeedback(selector, msg, isError = false) {
     const el = document.querySelector(selector);
     el.textContent = msg;
@@ -79,23 +105,69 @@ function populateVendors() {
 function populateProducts(vendor) {
     const productSel = document.getElementById("product");
     productSel.innerHTML = "";
-    (vendorProducts[vendor] || []).forEach(product => {
+    const catalogProducts = vendorProducts[vendor] || [];
+    const inventoryDevices = managedInventory[vendor] || [];
+    const inventoryProducts = new Set(inventoryDevices.map(device => device.product));
+    inventoryDevices.forEach(device => {
         const opt = document.createElement("option");
-        opt.value = product;
-        opt.textContent = product;
+        opt.value = device.product;
+        opt.textContent = `${device.product} - ${device.device_id}`;
         productSel.appendChild(opt);
+    });
+    catalogProducts
+        .filter(product => !inventoryProducts.has(product))
+        .forEach(product => {
+            const opt = document.createElement("option");
+            opt.value = product;
+            opt.textContent = `${product} (catalog)`;
+            productSel.appendChild(opt);
+        });
+}
+
+function populateInventoryDevices(vendor) {
+    const deviceSel = document.getElementById("inventory-device");
+    if (!deviceSel) return;
+    deviceSel.innerHTML = "";
+    const devices = managedInventory[vendor] || [];
+    if (!devices.length) {
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.textContent = "No registered inventory devices";
+        deviceSel.appendChild(empty);
+        return;
+    }
+    devices.forEach(device => {
+        const opt = document.createElement("option");
+        opt.value = device.device_id;
+        opt.textContent = `${device.device_id} - ${device.product} (${device.management_address})`;
+        deviceSel.appendChild(opt);
     });
 }
 
 function populateSbiDevices(vendor) {
     const sbiSel = document.getElementById("sbi-device");
     sbiSel.innerHTML = "";
+    const devices = managedInventory[vendor] || [];
+    if (devices.length) {
+        const inventoryGroup = document.createElement("optgroup");
+        inventoryGroup.label = `Managed ${vendor} devices (${devices.length})`;
+        devices.forEach(device => {
+            const opt = document.createElement("option");
+            opt.value = device.device_id;
+            opt.textContent = `${device.device_id} - ${device.product} (${device.management_address})`;
+            inventoryGroup.appendChild(opt);
+        });
+        sbiSel.appendChild(inventoryGroup);
+    }
+    const simulatorGroup = document.createElement("optgroup");
+    simulatorGroup.label = "Local simulator transports";
     (sbiDevices[vendor] || []).forEach(dev => {
         const opt = document.createElement("option");
         opt.value = dev.value;
         opt.textContent = dev.label;
-        sbiSel.appendChild(opt);
+        simulatorGroup.appendChild(opt);
     });
+    if (simulatorGroup.children.length) sbiSel.appendChild(simulatorGroup);
 }
 
 function fetchVendorProducts() {
@@ -195,6 +267,11 @@ function refreshOperationalSummary() {
         document.getElementById("deployment-success").textContent = deployments ? String(successfulDeployments) : "—";
         const commits = values.configuration_commits_total ?? 0;
         document.getElementById("deployment-detail").textContent = deployments ? `${successfulDeployments} successful / ${failedDeployments} failed` : (commits ? `${commits} candidate commit(s); not deployed` : "No deployments recorded");
+        const successfulTests = metricTotal("test_cases_total", "passed");
+        const failedTests = metricTotal("test_cases_total", "failed");
+        const tests = successfulTests + failedTests;
+        document.getElementById("test-success").textContent = tests ? String(successfulTests) : "—";
+        document.getElementById("test-detail").textContent = tests ? `${successfulTests} passed / ${failedTests} failed` : "No test runs recorded";
         document.getElementById("fleet-health").textContent = health.status === "ready" ? "100%" : "At risk";
         document.getElementById("fleet-detail").textContent = "Control plane availability";
         document.getElementById("last-updated").textContent = new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
@@ -253,10 +330,12 @@ document.addEventListener("DOMContentLoaded", function() {
     refreshOperationalSummary();
     document.getElementById("refresh-dashboard").addEventListener("click", refreshOperationalSummary);
     refreshAgentConnections();
+    refreshInventory();
     document.getElementById("refresh-agents").addEventListener("click", refreshAgentConnections);
 
     document.getElementById("vendor").addEventListener("change", function() {
         populateProducts(this.value);
+        populateInventoryDevices(this.value);
         populateSbiDevices(this.value);
         const historyVendor = document.getElementById("history-vendor");
         if (historyVendor) historyVendor.textContent = this.options[this.selectedIndex].text;
@@ -286,6 +365,10 @@ function pushToSimDevice() {
     clearFeedback();
     const config = document.getElementById('generated-config').innerText;
     const device = document.getElementById('sbi-device').value;
+    if (device.startsWith("lab-")) {
+        showFeedback("#sim-push-result", "Managed inventory targets must use the authenticated production workflow; select a local simulator transport for this action.", true);
+        return;
+    }
     document.getElementById('sim-push-status').innerText = 'Pushing...';
     document.getElementById('sim-push-result').style.display = 'none';
     document.getElementById('sim-push-result').innerText = '';
