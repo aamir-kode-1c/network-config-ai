@@ -44,19 +44,19 @@ flowchart TB
     subgraph Northbound["Northbound users and interfaces"]
         Operator[Operator / network engineer]
         AIClient[AI client / MCP consumer]
-        Dashboard[Network Control Center<br/>Dashboard, connectors, tests]
-        APIClient[REST API / OpenAPI]
+        Dashboard["Network Control Center<br/>Dashboard, connectors, tests"]
+        APIClient["REST API / OpenAPI"]
         Operator --> Dashboard
         AIClient --> APIClient
     end
 
     subgraph ControlPlane["FastAPI orchestrator :8000"]
-        Routes[API routes<br/>inventory, changes, agents, RAG]
-        Intent[Normalized network intent]
-        Validate[Validation and policy checks]
-        Approval[Approval workflow<br/>RBAC, ticket, self-approval guard]
-        Render[Vendor catalog and configuration adapters]
-        Persist[(SQLite workflow database<br/>changes, devices, audit events)]
+        Routes["API routes<br/>inventory, changes, agents, RAG"]
+        Intent["Normalized network intent"]
+        Validate["Validation and policy checks"]
+        Approval["Approval workflow<br/>RBAC, ticket, self-approval guard"]
+        Render["Vendor catalog and configuration adapters"]
+        Persist[("SQLite workflow database<br/>changes, devices, audit events")]
         GitOps[(GitOps configuration history)]
         Routes --> Intent --> Validate --> Approval --> Render
         Approval <--> Persist
@@ -71,16 +71,16 @@ flowchart TB
     end
 
     subgraph Devices["Managed devices and lab targets"]
-        CiscoDevice[Cisco IOS-like simulator :2222]
-        NokiaDevices[Nokia devices]
-        EricssonDevices[Ericsson devices]
-        OpenetDevices[Openet devices]
-        Inventory[(50-device lab inventory<br/>10 devices per vendor)]
+        CiscoDevice["Cisco IOS-like simulator :2222"]
+        NokiaDevices["Nokia devices"]
+        EricssonDevices["Ericsson devices"]
+        OpenetDevices["Openet devices"]
+        Inventory[("50-device lab inventory<br/>10 devices per vendor")]
     end
 
     subgraph Knowledge["Knowledge and AI tools"]
         Catalog[(vendor_products.json)]
-        RAG[Documentation RAG<br/>ingest, chunk, embed, retrieve]
+        RAG["Documentation RAG<br/>ingest, chunk, embed, retrieve"]
         MCP[MCP vendor-products server]
         Docs[Vendor documentation]
         Docs --> RAG
@@ -89,11 +89,11 @@ flowchart TB
     end
 
     subgraph Observability["Observability and operations"]
-        Metrics[/metrics<br/>deployment, reachability, tests, queue]
-        Prometheus[Prometheus :9090]
-        ChangesDashboard[Network Automation Changes<br/>Grafana dashboard]
-        DeviceDashboard[Agent Device KPIs<br/>Grafana dashboard]
-        Alerts[Structured logs<br/>optional alert webhook]
+        Metrics["/metrics<br/>deployment, reachability, tests, queue"]
+        Prometheus["Prometheus :9090"]
+        ChangesDashboard["Network Automation Changes<br/>Grafana dashboard"]
+        DeviceDashboard["Agent Device KPIs<br/>Grafana dashboard"]
+        Alerts["Structured logs<br/>optional alert webhook"]
         Metrics --> Prometheus
         Prometheus --> ChangesDashboard
         Prometheus --> DeviceDashboard
