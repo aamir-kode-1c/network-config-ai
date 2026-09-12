@@ -1,276 +1,261 @@
-# AI-Powered Multi-Vendor Network Configuration Manager
+# AI-Based Multi-Vendor Network Configuration Manager
 
-## Overview
+Production-oriented network automation platform for generating, reviewing,
+approving, deploying, and observing configuration changes across multi-vendor
+network devices.
 
-This project is a production-ready, extensible, multi-vendor network configuration manager and simulator. It enables network engineers and operators to dynamically generate, version, test, and push device configurations for a wide range of vendors (Cisco, Nokia, Ericsson, Huawei, Openet, and more) through a modern web dashboard.
+The repository supports two operating modes:
 
-- **Backend:** FastAPI (Python)
-- **Frontend:** Jinja2 templates, HTML/CSS/JS
-- **Simulators:** Local Python socket servers for each vendor/product
-- **Config Storage:** GitOps (versioned, rollback, commit history)
+- **Local lab mode:** Docker Compose, vendor agents, and a Cisco IOS-like
+  simulator for safe end-to-end testing.
+- **Controlled production mode:** authenticated, approval-gated changes,
+  external device inventory, NETCONF deployment, GitOps history, audit events,
+  RAG-backed vendor documentation, Prometheus, and Grafana.
 
----
+## 1. Problem statement
 
-## Agentic AI Device Connectors
+Network configuration is often created manually or with vendor-specific
+scripts. This creates several operational problems:
 
-The Agentic AI Device Connectors module provides a robust, extensible E2E workflow for multi-vendor network configuration management, bridging the gap between northbound intent (NBI) and southbound device configuration (SBI) via agent microservices for each vendor.
+- Network intent and device syntax are disconnected.
+- Engineers must remember different CLI, JSON, XML, and YANG formats.
+- Changes are difficult to review, approve, audit, and roll back consistently.
+- A failed deployment can be hard to correlate with the device, agent, ticket,
+  operator, and exact configuration.
+- Vendor documentation changes faster than internal runbooks.
+- Operations teams need one view of agent reachability, deployment outcomes,
+  queue depth, validation failures, and rollback activity.
 
-### What It Does
-- Lets you register and manage agent endpoints for each supported vendor (Cisco, Nokia, Ericsson, Huawei, Openet, etc.).
-- Provides a built-in NBI Payload Generator to create NB API payloads and generate vendor-specific configs.
-- Enables direct push of generated configs to physical or simulated hardware via agents, supporting SSH, NETCONF, or other protocols.
-- Supports E2E testing, demo, and production workflows from the dashboard.
+The goal is to provide a controlled workflow:
 
-### Agentic AI Workflow Diagram
+```text
+Intent -> validation -> vendor rendering -> review -> approval -> deployment
+       -> device/agent result -> audit -> metrics, traces, and alerts
+```
+
+## 2. Solution overview
+
+The platform converts a normalized northbound intent into vendor-specific
+configuration and sends it through a vendor connector. Every production change
+is authenticated, persisted, approval-gated, and observable.
 
 ```mermaid
-graph TD
-    subgraph Dashboard
-        A[NBI Payload Generator]
-        B[Agent Registration]
-        C[Push Config Form]
-    end
-    subgraph Backend
-        D[Config Generator]
-        E[Agent Registry]
-        F[Push-to-Agent Endpoint]
-    end
-    subgraph Agents
-        G[Cisco Agent]
-        H[Nokia Agent]
-        I[Ericsson Agent]
-        J[Openet Agent]
-    end
-    subgraph Devices
-        K[Cisco Device]
-        L[Nokia Device]
-        M[Ericsson Device]
-        N[Openet Device]
-    end
-
-    A-->|Generate Config|D
-    B-->|Register Agent|E
-    C-->|Push Config|F
-    D-->|Return Config|A
-    F-->|Send Config|G
-    F-->|Send Config|H
-    F-->|Send Config|I
-    F-->|Send Config|J
-    G-->|Apply Config|K
-    H-->|Apply Config|L
-    I-->|Apply Config|M
-    J-->|Apply Config|N
-    G-->|Status/Output|F
-    H-->|Status/Output|F
-    I-->|Status/Output|F
-    J-->|Status/Output|F
-    F-->|Show Output|C
+flowchart LR
+    User[Operator / AI client] --> UI[Operations dashboard]
+    UI --> API[FastAPI orchestrator]
+    API --> Catalog[Vendor catalog and adapters]
+    API --> Workflow[Change workflow and approvals]
+    Workflow --> Git[GitOps config history]
+    Workflow --> Agents[Vendor agents]
+    Agents --> Devices[Physical devices or simulators]
+    API --> RAG[Vendor documentation RAG]
+    API --> Metrics[/metrics]
+    Metrics --> Prometheus[Prometheus]
+    Prometheus --> Grafana[Grafana dashboards]
+    API --> Alerts[Structured logs and optional webhook]
 ```
 
-### Features & E2E Flow
+## 3. Architecture and components
 
-- **NBI Payload Generator:**
-  - Compose NB API payloads (JSON) for any vendor/product.
-  - Generate vendor-specific CLI/JSON/XML/YANG configs instantly.
-  - Copy generated config directly to the push form.
+### Orchestrator
 
-- **Agent Registration:**
-  - Register agent endpoints (IP/port, token) for each vendor.
-  - View agent status, last sync, and manage endpoints.
+The FastAPI service in `app/` provides:
 
-- **Config Push:**
-  - Select vendor, paste/generated config, and push directly to the device via the registered agent.
-  - Supports real hardware or simulators for safe E2E testing.
+- Dashboard and static assets.
+- Vendor/product catalog APIs.
+- Configuration generation.
+- Agent registration, reachability probes, and push routing.
+- Authenticated production change APIs.
+- Device inventory APIs.
+- RAG ingestion and retrieval APIs.
+- Health, readiness, trace, and Prometheus-compatible metrics endpoints.
 
-- **Agent Microservices:**
-  - Each vendor agent runs as a microservice (FastAPI/Uvicorn, Docker-ready).
-  - Agents connect to devices via SSH, NETCONF, or other protocols.
-  - Agents return status/output to the dashboard for full visibility.
+### Vendor catalog and adapters
 
-- **E2E Orchestration:**
-  - From NBI intent to device config, the workflow is fully automated, observable, and extensible.
-  - Supports demo, development, and production deployments.
+- `vendor_products.json` stores normalized product metadata, documentation
+  links, supported formats, and payload examples.
+- `app/core/vendor_catalog.py` loads local or remote catalogs.
+- `app/vendor/` contains vendor-specific renderers.
+- Supported output formats are CLI, JSON, XML, and YANG where the selected
+  product supports them.
 
----
+### Agent microservices
 
-## Example Screenshots
+Dockerized agent services provide vendor-specific southbound integration:
 
-> _Replace the image URLs below with actual screenshots from your deployment._
+| Agent | Container service | Host port |
+|---|---|---:|
+| Cisco | `agent_cisco` | 5003 |
+| Nokia | `agent_nokia` | 5001 |
+| Ericsson | `agent_ericsson` | 5004 |
+| Openet | `agent_openet` | 5005 |
 
-**Dashboard - NBI Payload Generator and Agentic Push**
+The current local Cisco path is:
 
-![Dashboard Screenshot](![alt text](image.png))
-
-**Agent Registration and Status Table**
-
-![Agents Screenshot](![alt text](image-1.png))
-
----
-
-## More Deployment Instructions
-
-### 1. Docker Compose (Recommended)
-
-- Build and start all services (orchestrator and agents):
-  ```bash
-  docker-compose up --build
-  ```
-- Visit [http://localhost:8000](http://localhost:8000) for the dashboard.
-- Agents will be available on ports 5001 (Nokia), 5003 (Cisco), 5004 (Ericsson), 5005 (Openet).
-
-### 2. Standalone (Dev/Test)
-
-- Install dependencies:
-  ```bash
-  pip install -r requirements.txt
-  ```
-- Start the orchestrator:
-  ```bash
-  uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
-  ```
-- Start agents (in separate terminals):
-  ```bash
-  python agents/agent_cisco_ssh.py
-  python agents/agent_nokia_ssh.py
-  # ...etc.
-  ```
-
-### 3. Production Best Practices
-- Use HTTPS and secure credentials.
-- Configure `CONFIG_MANAGER_API_KEYS` before using `/api/v1` (the production API
-  fails closed when no key is configured). The value is JSON mapping an API key
-  to an actor and role, for example
-  `{"replace-me":{"actor":"operator@example.com","role":"operator"}}`.
-  Supported roles are `operator`, `approver`, `deployer`, and `admin`.
-- Register devices through `POST /api/v1/devices`. Only a credential environment
-  variable name is stored; passwords and private keys are never persisted.
-- Use the approval workflow: create a change, approve it with a different
-  actor, then deploy it. Changes are persisted in SQLite and every transition
-  is available from `/api/v1/changes/{id}/audit`.
-- NETCONF deployment requires an XML candidate, a pinned `hostkey`, candidate
-  locking/validation, and confirmed commit support. Set
-  `CONFIG_MANAGER_DEPLOYMENT_MODE=netconf` only after registering the device.
-- Monitor `/health/live`, `/health/ready`, and `/metrics`.
-- Use Docker or Kubernetes for orchestration.
-- Monitor logs and agent health.
-
----
-
-## API Endpoint Documentation
-
-### Orchestrator API
-
-- `GET /api/vendor-products` — List available vendor/product pairs
-- `POST /generate-config` — Generate vendor-specific config from NB API payload
-- `POST /api/agents/register` — Register a new agent endpoint
-- `GET /api/agents/list` — List all registered agents
-- `POST /api/agents/push` — Push config to a registered agent
-
-### Agent API (per vendor)
-
-- `POST /push-config` — Receive and apply config to device (SSH, NETCONF, etc.)
-  - Example payload:
-    ```json
-    {
-      "config": "<CLI or XML config>",
-      "token": "<optional>"
-    }
-    ```
-
----
-
-## API Testing with Swagger (OpenAPI UI)
-
-This project includes an interactive API documentation and testing tool using **Swagger UI** (powered by FastAPI/OpenAPI).
-
-- **How to Access:**
-  - When the backend is running, go to [http://localhost:8000/docs](http://localhost:8000/docs) in your browser.
-- **What You Can Do:**
-  - Explore all available API endpoints and their request/response schemas.
-  - Try out API calls directly from the browser (no need for curl/Postman).
-  - See sample payloads, required fields, and error messages in real time.
-- **Why Use Swagger?**
-  - Great for developers, testers, and integrators to quickly validate and experiment with the API.
-  - Ensures your API is self-documenting and always up to date.
-
-
-![alt text](image-2.png)
-
-  - For advanced usage, you can also access the raw OpenAPI JSON at `/openapi.json`.
----
-
-## Docker Compose Quickstart
-
-```bash
-git clone https://github.com/aamir-kode-1c/network-config-ai.git
-cd network-config-ai
-docker-compose up --build
-```
-- Visit [http://localhost:8000](http://localhost:8000) to use the dashboard.
-- Agents are available on their respective ports.
-
----
-
-## Local MCP Vendor Product Server
-
-The repository includes a local MCP server that exposes the vendor and product
-catalog used by the agents. It provides:
-
-- `list_vendors_and_products` — list all supported vendors and products
-- `get_product` — retrieve product metadata and documentation links
-- `get_product_payloads` — retrieve payload templates for CLI, JSON, XML, and YANG
-- `vendor-products://catalog` — complete catalog MCP resource
-
-Install dependencies and run it from the repository root:
-
-```bash
-pip install -r requirements.txt
-python -m mcp_server.vendor_products_server
+```text
+Dashboard -> orchestrator:8000 -> agent-cisco:5003 -> cisco-simulator:22
 ```
 
-The server uses MCP stdio transport. Example MCP client configuration:
+### Production workflow
 
-```json
-{
-  "mcpServers": {
-    "network-config-ai-vendors": {
-      "command": "python",
-      "args": ["-m", "mcp_server.vendor_products_server"],
-      "cwd": "C:/path/to/network-config-ai"
-    }
-  }
-}
+`app/core/production.py` implements:
+
+- Typed intent and device models.
+- SQLite-backed change records and audit events.
+- State transitions: draft, validated, pending approval, approved, deploying,
+  completed, deployment failed, rejected, and rolled back.
+- Role and permission checks.
+- Self-approval prevention.
+- Production ticket enforcement.
+- Deployment concurrency protection.
+- Credential references instead of persisted passwords.
+
+### NETCONF deployment
+
+`app/core/netconf_worker.py` provides a guarded NETCONF implementation with:
+
+- Host-key verification.
+- Candidate datastore locking.
+- XML validation.
+- Candidate validation.
+- Confirmed-commit capability checks.
+- `commit-confirmed` followed by explicit confirmation.
+- Credentials resolved from environment references.
+
+### Documentation RAG
+
+The RAG pipeline in `app/core/rag.py` is:
+
+```text
+Vendor documentation
+    -> HTTPS importer
+    -> HTML/JSON parser
+    -> chunking with overlap
+    -> deterministic embeddings
+    -> SQLite vector store
+    -> versioned retrieval with citations
 ```
 
-To load products from a normalized JSON catalog API instead of
-`vendor_products.json`, set `VENDOR_CATALOG_URL` in the MCP client's environment:
+The importer rejects private, local, and reserved hosts to reduce SSRF risk.
+Retrieval results include source URL, vendor, product, version, and chunk
+metadata.
 
-```json
-{
-  "env": {
-    "VENDOR_CATALOG_URL": "https://example.com/vendor-catalog.json"
-  }
-}
+### MCP server
+
+`mcp_server/vendor_products_server.py` exposes MCP tools for:
+
+- `list_vendors_and_products`
+- `get_product`
+- `get_product_payloads`
+- `search_vendor_documentation`
+
+It also exposes the `vendor-products://catalog` resource over stdio.
+
+## 4. Requirements
+
+### Local development
+
+- Windows, Linux, or macOS.
+- Python 3.11 or newer.
+- Docker Desktop with Compose v2.
+- Git.
+- At least 4 GB RAM available to Docker.
+- Ports available:
+  - 8000 orchestrator
+  - 5001 Nokia agent
+  - 5003 Cisco agent
+  - 5004 Ericsson agent
+  - 5005 Openet agent
+  - 2222 Cisco simulator SSH
+  - 9090 Prometheus
+  - 3000 Grafana
+
+Python dependencies are pinned or listed in [requirements.txt](requirements.txt).
+
+### Production prerequisites
+
+- External secret management for API keys and device credentials.
+- TLS termination and network policy around the API and agents.
+- A durable database strategy for workflow records.
+- A real queue/worker backend for asynchronous deployment at scale.
+- Prometheus and Grafana storage retention policies.
+- A controlled alert webhook or incident-management integration.
+- Real device inventory and host-key files.
+
+## 5. Quick start with Docker Compose
+
+From the repository root:
+
+```powershell
+docker compose up -d --build
 ```
 
-The catalog API must return a JSON object mapping vendor names to product
-objects, as documented by the `/api/vendor-products/details` endpoint.
+Check all services:
 
----
+```powershell
+docker compose ps
+```
 
-## Production Change Workflow
+Open:
 
-The production API separates intent, rendering, approval, deployment, and audit:
+- Dashboard: [http://localhost:8000/dashboard](http://localhost:8000/dashboard)
+- API documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Agent connectors: [http://localhost:8000/agents](http://localhost:8000/agents)
+- Metrics: [http://localhost:8000/metrics](http://localhost:8000/metrics)
+- Prometheus: [http://localhost:9090](http://localhost:9090)
+- Grafana: [http://localhost:3000](http://localhost:3000)
+
+Default Grafana credentials are `admin` / `admin`. Override them before startup:
+
+```powershell
+$env:GRAFANA_ADMIN_USER = "admin"
+$env:GRAFANA_ADMIN_PASSWORD = "change-this-password"
+docker compose up -d
+```
+
+Stop the stack:
+
+```powershell
+docker compose down
+```
+
+## 6. Dashboard workflow
+
+1. Open the Network Control Center dashboard.
+2. Select a vendor and product.
+3. Select CLI, JSON, XML, or YANG output.
+4. Review the catalog-provided payload template.
+5. Enter a change description and edit the payload.
+6. Click **Generate candidate**.
+7. Review the generated configuration and safety checks.
+8. Select a deployment transport.
+9. Use **Send to simulator** for local testing.
+10. Use the production API workflow for approval-gated deployment.
+
+The dashboard also displays:
+
+- Fleet/control-plane health.
+- Change queue depth.
+- Successful deployments.
+- Validation failures.
+- Live agent reachability.
+- Agent endpoint and target device.
+- Trace correlation status.
+
+## 7. Production change workflow
+
+Production changes use the authenticated `/api/v1` API:
 
 ```text
 POST /api/v1/changes
 GET  /api/v1/changes/{change_id}
 POST /api/v1/changes/{change_id}/approve
 POST /api/v1/changes/{change_id}/deploy
+POST /api/v1/changes/{change_id}/reject
 GET  /api/v1/changes/{change_id}/audit
 ```
 
-Example change request:
+Example:
 
 ```json
 {
@@ -288,145 +273,279 @@ Example change request:
   "reason": "Provision transit link",
   "ticket_id": "CHG-1001",
   "environment": "production",
+  "transport": "netconf",
   "requested_by": "engineer@example.com"
 }
 ```
 
-Production changes require `ticket_id`, remain `pending_approval` until approved,
-and are recorded in SQLite at `configs/network_config_manager.db`. Deployment is
-disabled by default. For controlled development simulation only:
+Production changes require a ticket and a different approving actor. Changes
+are stored in `configs/network_config_manager.db`. Deployment is disabled by
+default:
+
+```powershell
+$env:CONFIG_MANAGER_DEPLOYMENT_MODE = "disabled"
+```
+
+For controlled simulation:
 
 ```powershell
 $env:CONFIG_MANAGER_DEPLOYMENT_MODE = "simulated"
-docker compose up --build -d
+docker compose up -d --build
 ```
 
-Set `CONFIG_MANAGER_API_KEY` to require the `X-API-Key` header on workflow
-mutations. NETCONF deployment requires
-`CONFIG_MANAGER_DEPLOYMENT_MODE=netconf` and an external device inventory.
-Credentials are resolved at deployment time and are never stored in the change
-database.
+## 8. Authentication and secrets
+
+Configure API keys before using production mutations:
+
+```powershell
+$env:CONFIG_MANAGER_API_KEYS = '{"replace-me":{"actor":"operator@example.com","role":"operator"}}'
+```
+
+Supported roles include `operator`, `approver`, `deployer`, and `admin`.
+Clients send the key using `X-API-Key`. Device passwords, private keys, and
+credential values must not be committed to source control or persisted in
+change records.
+
+NETCONF inventory example:
 
 ```powershell
 $env:DEVICE_INVENTORY_JSON = '{"router-001":{"host":"198.51.100.10","port":830,"username":"netops","password_env":"ROUTER_001_PASSWORD","hostkey_verify":true,"hostkey":"C:\\ProgramData\\network-config-ai\\known_hosts"}}'
-$env:ROUTER_001_PASSWORD = "set-this-outside-source-control"
+$env:ROUTER_001_PASSWORD = "set-outside-source-control"
 $env:CONFIG_MANAGER_DEPLOYMENT_MODE = "netconf"
-docker compose up --build -d
+docker compose up -d --build
 ```
 
-NETCONF changes must use `xml` or `yang` output. The worker validates the
-candidate, edits the candidate datastore, and issues `commit-confirmed`.
+## 9. Cisco simulator and CLI test
 
-## Production observability
-
-`GET /metrics` exposes Prometheus-compatible metrics for:
-
-- `production_change_deployments_total{mode,status}`
-- `device_reachability_total{device_id,status}`
-- `change_queue_depth`
-- `configuration_rollbacks_total{vendor,status}`
-- `configuration_rollback_rate{vendor}`
-- `config_validation_failures_total{vendor,product}`
-- `ai_tool_invocations_total{tool}`
-- `configuration_commits_total{vendor,product,status}`
-- `simulated_deployments_total{vendor,transport,status}`
-- HTTP request totals and durations
-
-Every HTTP request receives an `X-Trace-ID` response header. Clients may provide
-the same header to propagate a correlation ID across services. Failed production
-changes are logged as structured alert events and can be sent to a controlled
-webhook by setting `CONFIG_MANAGER_ALERT_WEBHOOK`.
-
-## Local Cisco simulator
-
-The Compose stack includes one Cisco IOS-like SSH simulator for safe manual
-testing. The connection path is:
-
-```text
-dashboard -> orchestrator -> agent-cisco -> cisco-simulator:22
-```
-
-Start the path with:
+The local Cisco simulator is an IOS-like SSH target intended for safe testing:
 
 ```powershell
 docker compose up -d --build cisco_simulator agent_cisco orchestrator
 ```
 
-The simulator is also exposed on `localhost:2222` for direct SSH testing.
-Default credentials are `admin` / `cisco`; override them with
-`CISCO_SIMULATOR_USERNAME` and `CISCO_SIMULATOR_PASSWORD`.
+It is exposed on `localhost:2222` with default credentials `admin` / `cisco`.
+Override them with `CISCO_SIMULATOR_USERNAME` and
+`CISCO_SIMULATOR_PASSWORD`.
 
-From the dashboard, choose Cisco and `ASR 9000`, generate a candidate, select
-`Cisco ASR 9000 (SSH/CLI)`, and click **Send to simulator**. The
-`/push-to-sim` route forwards the configuration to the Cisco agent, which
-applies each command over SSH to the simulator.
-
-Run the same end-to-end test from a terminal:
+Run the complete CLI test:
 
 ```powershell
 python cli_test.py
 ```
 
-Use `--no-push` to validate only candidate generation, or override the test
-interface and address with `--interface`, `--ip`, and `--subnet`.
+This checks readiness, generates a Cisco ASR 9000 candidate, pushes it through
+the orchestrator and Cisco agent, and validates the simulator response.
 
-## Vendor documentation RAG
+Generate without pushing:
 
-Vendor documentation can be imported and searched through a versioned local
-knowledge base. Documents are parsed, chunked, indexed with local hashed
-embeddings, and returned with source URL, vendor, product, version, and chunk
-citations:
+```powershell
+python cli_test.py --no-push
+```
+
+Customize the test:
+
+```powershell
+python cli_test.py --interface GigabitEthernet0/3 --ip 192.0.2.20 --subnet 255.255.255.0
+```
+
+## 10. Testing strategy
+
+### Fast validation
+
+```powershell
+python -m compileall -q app mcp_server tests
+node --check app/static/dashboard.js
+node --check app/static/agents.js
+git diff --check
+docker compose config --quiet
+```
+
+### Focused automated tests
+
+```powershell
+python -m pytest -q tests/test_vendor_catalog.py tests/test_observability.py
+python -m pytest -q tests/test_production_safety.py tests/test_production_workflow.py
+python -m pytest -q tests/test_rag.py
+```
+
+### Service smoke tests
+
+```powershell
+Invoke-WebRequest http://localhost:8000/health/live -UseBasicParsing
+Invoke-WebRequest http://localhost:8000/health/ready -UseBasicParsing
+Invoke-WebRequest http://localhost:8000/metrics -UseBasicParsing
+Invoke-WebRequest http://localhost:9090/-/ready -UseBasicParsing
+Invoke-WebRequest http://localhost:3000/api/health -UseBasicParsing
+```
+
+### End-to-end vendor test data
+
+The CLI test validates Cisco. For Grafana test data, use the API to generate
+and push cases for each vendor. A local deployment may have only Cisco
+hardware simulation; unsupported vendor transports should be recorded as
+intentional failures rather than hidden.
+
+## 11. Observability
+
+### Health endpoints
+
+- `GET /health/live`: process liveness.
+- `GET /health/ready`: database/application readiness.
+- `GET /metrics`: Prometheus-compatible metrics.
+
+Every HTTP response includes `X-Trace-ID`. Clients can provide an existing
+`X-Trace-ID` to correlate requests across services.
+
+### Metrics
+
+The orchestrator exposes:
+
+```text
+production_change_deployments_total{mode,agent,vendor,device_id,status}
+simulated_deployments_total{agent,vendor,device_id,transport,status}
+configuration_commits_total{vendor,product,status}
+device_reachability_total{device_id,status}
+config_validation_failures_total{vendor,product}
+configuration_rollbacks_total{vendor,status}
+configuration_rollback_rate{vendor}
+ai_tool_invocations_total{tool}
+change_queue_depth
+http_requests_total{path,status}
+config_manager_http_request_duration_seconds_sum
+```
+
+Avoid putting credentials, full configurations, or sensitive payload contents
+into metric labels or logs.
+
+### Prometheus
+
+Prometheus is configured in [monitoring/prometheus.yml](monitoring/prometheus.yml)
+and scrapes the orchestrator every 15 seconds.
+
+Check the target:
+
+```powershell
+$query = [uri]::EscapeDataString('up{job="config-manager"}')
+Invoke-WebRequest "http://localhost:9090/api/v1/query?query=$query" -UseBasicParsing
+```
+
+### Grafana
+
+The provisioned **Network Automation Changes** dashboard is available at:
+
+[Grafana Network Automation Changes](http://localhost:3000/d/network-automation-changes/network-automation-changes?orgId=1&from=now-24h&to=now&refresh=15s)
+
+It provides:
+
+- Successful and failed change totals.
+- Change rates by agent.
+- Successful and failed rates by vendor.
+- Device totals by agent, vendor, device, transport, and status.
+
+Dashboard provisioning files are under
+`monitoring/grafana/provisioning/` and
+`monitoring/grafana/dashboards/`.
+
+### Alerting
+
+Failed production changes are emitted as structured logs. Optional webhook
+delivery is enabled with:
+
+```powershell
+$env:CONFIG_MANAGER_ALERT_WEBHOOK = "https://alerts.example.test/network"
+```
+
+Webhook delivery uses a short timeout and cannot mask the original deployment
+failure.
+
+### Logs
+
+```powershell
+docker compose logs -f orchestrator
+docker compose logs -f agent_cisco cisco_simulator
+docker compose logs -f prometheus grafana
+```
+
+## 12. Vendor documentation RAG
+
+Secured endpoints:
 
 ```text
 POST /api/v1/knowledge/documents
 POST /api/v1/knowledge/search
 ```
 
-The importer accepts HTML or JSON over HTTPS, rejects private/local hosts to
-prevent SSRF, and stores its SQLite vector index in
-`configs/vendor_knowledge.db`. Configure `knowledge:write` access for trusted
-ingestion operators. The MCP server also exposes
-`search_vendor_documentation`.
+The importer accepts public HTTPS HTML or JSON sources, chunks content, stores
+document versions and hashes in `configs/vendor_knowledge.db`, and returns
+citations. The MCP server exposes `search_vendor_documentation`.
 
-This local embedding implementation is deterministic and dependency-light. For
-semantic quality at scale, replace `_embedding` in `app/core/rag.py` with a
-versioned sentence-transformer or managed embedding provider while retaining
-the citation and document-version contract.
+The default hashed-token embedding is deterministic and dependency-light. For
+large-scale semantic retrieval, replace it with a versioned sentence-transformer
+or managed embedding service while retaining the citation contract.
 
----
+## 13. Local MCP vendor server
 
+Run the local MCP server:
 
-
-## Key Features
-
-- **Dynamic Vendor/Product Selection:** Supports multiple vendors and products with automatic dropdown population.
-- **Config Generation:** Accepts NB API payload (JSON) and generates vendor/product-specific CLI, JSON, XML, or YANG configs.
-- **Simulation & E2E Testing:** Pushes generated configs to local simulators for each vendor/product via SSH/CLI or NETCONF.
-- **Version Control:** GitOps integration for config history, rollback, and audit.
-- **User Feedback:** Modern dashboard with clear status, loading, and error messages.
-
----
-
-## System Architecture & Workflow
-
-```mermaid
-graph TD
-    A[User Dashboard UI] -->|1. Select Vendor_Product, Enter Payload| B
-    B[Frontend JS] -->|2. Fetch api_vendor_products| C
-    B -->|3. Submit generate_config| D
-    D[FastAPI Backend] -->|4. Generate Config| E
-    E[Vendor Generators] -->|5. Return Config| D
-    D -->|6. Return Config to UI| B
-    B -->|7. Push to Device| F
-    F[FastAPI Backend] -->|8. Connect to Simulator| G
-    G[Vendor Simulator] -->|9. Receive CLI Commands| G
-    F -->|10. Return Push Status Output| B
-    B -->|11. Show Output to User| A
-    D -->|12. Commit Config GitOps| H[Git Repo]
+```powershell
+pip install -r requirements.txt
+python -m mcp_server.vendor_products_server
 ```
 
-## Developers
+Example client configuration:
 
-<img src="docs/logo-dev-ai.png" alt="Dev AI Logo" width="48" height="48" style="vertical-align:middle; margin-right:8px;"/> Syed Aamir
+```json
+{
+  "mcpServers": {
+    "network-config-ai-vendors": {
+      "command": "python",
+      "args": ["-m", "mcp_server.vendor_products_server"],
+      "cwd": "C:/path/to/network-config-ai"
+    }
+  }
+}
+```
 
----
+Set `VENDOR_CATALOG_URL` to load a normalized remote JSON catalog.
+
+## 14. Repository layout
+
+```text
+app/
+  api/                 FastAPI routes
+  core/                workflow, security, NETCONF, RAG, metrics
+  static/              dashboard JavaScript and CSS
+  templates/           dashboard and agent pages
+  vendor/              vendor configuration adapters
+agents/                vendor connector services
+monitoring/            Prometheus and Grafana provisioning
+mcp_server/            local MCP tools and resources
+simulator/             local Cisco SSH simulator
+configs/               GitOps configs and local SQLite databases
+tests/                 focused automated tests
+cli_test.py            Cisco end-to-end CLI smoke test
+docker-compose.yml     local service topology
+```
+
+## 15. Production hardening roadmap
+
+The current implementation provides a production-oriented foundation, but a
+real deployment should additionally:
+
+1. Put the API, agents, Prometheus, and Grafana behind TLS and network policy.
+2. Replace in-memory metrics with a durable metrics backend, which Prometheus
+   provides for time-series retention.
+3. Move synchronous deployments to a durable queue and worker model.
+4. Use PostgreSQL or another managed database for high availability.
+5. Integrate enterprise identity, RBAC, and short-lived credentials.
+6. Add policy-as-code checks, maintenance windows, and blast-radius limits.
+7. Add high-availability Prometheus/Grafana and backup/restore procedures.
+8. Add alert routing, on-call escalation, and SLOs.
+9. Test real vendor agents against lab hardware before production rollout.
+10. Maintain signed, versioned vendor adapters and documentation sources.
+
+## 16. License and contributors
+
+This project is maintained by Syed Aamir and contributors. Review the
+repository license and organizational policies before distributing or
+connecting the system to production infrastructure.

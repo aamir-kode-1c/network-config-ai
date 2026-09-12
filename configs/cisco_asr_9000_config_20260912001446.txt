@@ -1,0 +1,5 @@
+interface GigabitEthernet0/29
+  ip address 198.51.100.19 255.255.255.0
+  description 'grafana-final-9'
+  no shutdown
+exit

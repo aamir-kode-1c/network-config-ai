@@ -1,0 +1,5 @@
+interface GigabitEthernet0/53
+  ip address 203.0.113.53/255.255.255.0
+  description 'all-vendor-ericsson'
+  admin-state up
+exit

@@ -397,7 +397,14 @@ def deploy_change(change_id: str, actor: str) -> ChangeRecord:
     deployment_mode = os.getenv("CONFIG_MANAGER_DEPLOYMENT_MODE", "disabled")
     if deployment_mode not in {"simulated", "netconf"}:
         raise ValueError("Deployment backend is disabled; configure CONFIG_MANAGER_DEPLOYMENT_MODE")
-    increment("production_change_deployments_total", {"mode": deployment_mode, "status": "started"})
+    deployment_labels = {
+        "mode": deployment_mode,
+        "status": "started",
+        "vendor": change.intent.vendor,
+        "agent": f"{change.intent.vendor}-agent",
+        "device_id": change.intent.device_id,
+    }
+    increment("production_change_deployments_total", deployment_labels)
     if deployment_mode == "netconf" and change.intent.transport != "netconf":
         raise ValueError("NETCONF deployment requires a NETCONF change intent")
     connection = _connection()
@@ -435,7 +442,8 @@ def deploy_change(change_id: str, actor: str) -> ChangeRecord:
             _audit(connection, change_id, actor, "deployment_failed", {"error": str(exc)})
             connection.commit()
             connection.close()
-            increment("production_change_deployments_total", {"mode": deployment_mode, "status": "failure"})
+            deployment_labels["status"] = "failure"
+            increment("production_change_deployments_total", deployment_labels)
             alert_failed_change(change_id, actor, str(exc))
             raise ValueError(str(exc)) from exc
     else:
@@ -446,7 +454,8 @@ def deploy_change(change_id: str, actor: str) -> ChangeRecord:
     _audit(connection, change_id, actor, "deployed", {"mode": deployment_mode, "result": deployment_result})
     connection.commit()
     connection.close()
-    increment("production_change_deployments_total", {"mode": deployment_mode, "status": "success"})
+    deployment_labels["status"] = "success"
+    increment("production_change_deployments_total", deployment_labels)
     set_gauge("change_queue_depth", _pending_change_count())
     return get_change(change_id)
 

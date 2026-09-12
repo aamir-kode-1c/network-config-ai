@@ -102,7 +102,8 @@ async def push_to_sim(request: Request):
                 json={"config": config},
                 timeout=30,
             )
-            increment("simulated_deployments_total", {"vendor": "cisco", "transport": "agent", "status": "success" if response.is_success and response.json().get("status") == "success" else "failure"})
+            push_status = "success" if response.is_success and response.json().get("status") == "success" else "failure"
+            increment("simulated_deployments_total", {"vendor": "cisco", "agent": "cisco-agent", "device_id": "cisco-simulator", "transport": "agent", "status": push_status})
             return JSONResponse(response.json(), status_code=response.status_code)
         elif device == "nokia_7750sr_ssh":
             HOST, PORT = "localhost", 2223
@@ -124,18 +125,22 @@ async def push_to_sim(request: Request):
                 s.sendall(b"exit\n")
                 resp = s.recv(1024)
                 output_lines.append(resp.decode().strip())
-            increment("simulated_deployments_total", {"vendor": device.split("_", 1)[0], "transport": "ssh", "status": "success"})
+            vendor = device.split("_", 1)[0]
+            increment("simulated_deployments_total", {"vendor": vendor, "agent": f"{vendor}-agent", "device_id": device, "transport": "ssh", "status": "success"})
             return JSONResponse({"status": f"Config pushed to simulated device ({device}).", "output": '\n'.join(output_lines)})
         # NETCONF simulation
         elif device in ["cisco_asr9000_netconf", "nokia_7750sr_netconf"]:
             # Simulate NETCONF session (in real usage, use ncclient or similar)
             output_lines.append("[NETCONF] Simulated push: " + config.replace('\n', ' | '))
-            increment("simulated_deployments_total", {"vendor": device.split("_", 1)[0], "transport": "netconf", "status": "success"})
+            vendor = device.split("_", 1)[0]
+            increment("simulated_deployments_total", {"vendor": vendor, "agent": f"{vendor}-agent", "device_id": device, "transport": "netconf", "status": "success"})
             return JSONResponse({"status": f"Config pushed via NETCONF to {device} (simulated)", "output": '\n'.join(output_lines)})
         else:
+            vendor = device.split("_", 1)[0] if "_" in device else "unknown"
+            increment("simulated_deployments_total", {"vendor": vendor, "agent": f"{vendor}-agent", "device_id": device, "transport": "unknown", "status": "failure"})
             return JSONResponse({"status": f"Unknown device/protocol: {device}"}, status_code=400)
     except Exception as e:
-        increment("simulated_deployments_total", {"vendor": "unknown", "transport": "unknown", "status": "failure"})
+        increment("simulated_deployments_total", {"vendor": "unknown", "agent": "unknown", "device_id": "unknown", "transport": "unknown", "status": "failure"})
         return JSONResponse({"status": f"Push failed: {str(e)}"}, status_code=500)
         
 @router.post("/rollback", response_model=RollbackResponse, summary="Rollback vendor config", response_description="Rolled back config for the vendor")
