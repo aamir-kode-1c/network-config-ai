@@ -1,0 +1,94 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Successful changes",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "(sum(simulated_deployments_total{status=\"success\"}) or vector(0)) + (sum(production_change_deployments_total{status=\"success\"}) or vector(0))", "legendFormat": "success", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Failed changes",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "(sum(simulated_deployments_total{status=\"failure\"}) or vector(0)) + (sum(production_change_deployments_total{status=\"failure\"}) or vector(0))", "legendFormat": "failed", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "timeseries",
+      "title": "Changes by agent",
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {"expr": "sum by (agent) (rate(simulated_deployments_total[5m])) or sum by (agent) (rate(production_change_deployments_total[5m]))", "legendFormat": "{{agent}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"lineWidth": 2, "fillOpacity": 15}, "color": {"mode": "palette-classic"}}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "timeseries",
+      "title": "Successful vs failed changes by vendor",
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {"expr": "sum by (vendor) (rate(simulated_deployments_total{status=\"success\"}[5m])) or sum by (vendor) (rate(production_change_deployments_total{status=\"success\"}[5m]))", "legendFormat": "{{vendor}} success", "refId": "A"},
+        {"expr": "sum by (vendor) (rate(simulated_deployments_total{status=\"failure\"}[5m])) or sum by (vendor) (rate(production_change_deployments_total{status=\"failure\"}[5m]))", "legendFormat": "{{vendor}} failed", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"lineWidth": 2, "fillOpacity": 15}}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "table",
+      "title": "Device change totals",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 13},
+      "targets": [
+        {"expr": "sum by (agent, vendor, device_id, status) (simulated_deployments_total) or sum by (agent, vendor, device_id, status) (production_change_deployments_total)", "format": "table", "instant": true, "refId": "A"}
+      ],
+      "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true}, "renameByName": {"Value": "Changes"}}}],
+      "options": {"showHeader": true}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Test cases passed",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 21},
+      "targets": [{"expr": "(sum(test_cases_total{status=\"passed\"}) or vector(0))", "legendFormat": "passed", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "stat",
+      "title": "Test cases failed",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 21},
+      "targets": [{"expr": "(sum(test_cases_total{status=\"failed\"}) or vector(0))", "legendFormat": "failed", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "type": "table",
+      "title": "Test results by case",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 21},
+      "targets": [
+        {"expr": "sum by (case, status) (test_cases_total)", "format": "table", "instant": true, "refId": "A"}
+      ],
+      "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true}, "renameByName": {"Value": "Runs"}}}],
+      "options": {"showHeader": true}
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "time": {"from": "now-24h", "to": "now"},
+  "title": "Network Automation Changes",
+  "uid": "network-automation-changes",
+  "version": 1
+}

@@ -1,46 +1,84 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+import os
+
 import paramiko
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 app = FastAPI()
 
+
 class ConfigPush(BaseModel):
     config: str
-    token: str = None
+    token: str | None = None
 
-from fastapi.responses import JSONResponse
+
+def _connect():
+    device_ip = os.getenv("CISCO_DEVICE_HOST", "cisco-simulator")
+    username = os.getenv("CISCO_DEVICE_USERNAME", "admin")
+    password = os.getenv("CISCO_DEVICE_PASSWORD", "cisco")
+    port = int(os.getenv("CISCO_DEVICE_PORT", "22"))
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(device_ip, port=port, username=username, password=password, timeout=10)
+    shell = ssh.invoke_shell()
+    shell.settimeout(5)
+    shell.recv(4096)
+    return ssh, shell
+
+
+@app.get("/current-config")
+def current_config():
+    ssh = None
+    try:
+        ssh, shell = _connect()
+        shell.send("show running-config\n")
+        output = shell.recv(16384).decode(errors="replace")
+        return {"status": "success", "config": output}
+    except Exception as exc:
+        print(f"[Cisco Agent] Read exception: {exc}")
+        return {"status": "error", "message": str(exc)}
+    finally:
+        if ssh:
+            ssh.close()
+
 
 @app.exception_handler(Exception)
 async def generic_exception_handler(request, exc):
     print(f"[Agent Error] Exception: {exc}")
     return JSONResponse(status_code=500, content={"status": "error", "message": str(exc)})
 
+
 @app.post("/push-config")
 def push_config(data: ConfigPush):
-    print("[Cisco Agent] /push-config called")
-    print("[Cisco Agent] Received payload:", data.dict())
-    # Replace with your device's real IP, username, and password
-    device_ip = "127.0.0.1"  # TODO: Set your Cisco device IP
-    username = "admin"           # TODO: Set your username
-    password = "your_password"   # TODO: Set your password
-    port = 22
+    device_ip = os.getenv("CISCO_DEVICE_HOST", "cisco-simulator")
+    username = os.getenv("CISCO_DEVICE_USERNAME", "admin")
+    password = os.getenv("CISCO_DEVICE_PASSWORD", "cisco")
+    port = int(os.getenv("CISCO_DEVICE_PORT", "22"))
     try:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(device_ip, port=port, username=username, password=password, timeout=10)
         shell = ssh.invoke_shell()
+        shell.settimeout(5)
         output = ""
         for line in data.config.strip().splitlines():
             shell.send(line + "\n")
-            output += shell.recv(1024).decode()
+            try:
+                output += shell.recv(4096).decode(errors="replace")
+            except TimeoutError:
+                break
         shell.send("exit\n")
-        output += shell.recv(1024).decode()
+        try:
+            output += shell.recv(4096).decode(errors="replace")
+        except TimeoutError:
+            pass
         ssh.close()
-        print("[Cisco Agent] Config applied successfully.")
-        return {"status": "success", "message": "Config applied via SSH", "output": output}
-    except Exception as e:
-        print(f"[Cisco Agent] Exception: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "success", "message": "Config applied via Cisco agent SSH", "output": output}
+    except Exception as exc:
+        print(f"[Cisco Agent] Exception: {exc}")
+        return {"status": "error", "message": str(exc)}
+
 
 if __name__ == "__main__":
     import uvicorn

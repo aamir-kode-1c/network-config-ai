@@ -1,0 +1,5 @@
+interface GigabitEthernet0/24
+  ip address 198.51.100.14 255.255.255.0
+  description 'grafana-final-4'
+  no shutdown
+exit

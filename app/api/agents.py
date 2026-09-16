@@ -2,11 +2,40 @@ from fastapi import APIRouter, Request, Body
 from fastapi.responses import JSONResponse
 from typing import Dict, List
 import time
+from urllib.request import urlopen
+from app.core.observability import set_gauge
 
 router = APIRouter()
 
 # In-memory agent registry (replace with DB for production)
-agents_registry: Dict[str, Dict] = {}
+agents_registry: Dict[str, Dict] = {
+    "cisco": {"endpoint": "agent-cisco:5003", "device": "Cisco simulator", "token": None},
+    "nokia": {"endpoint": "agent-nokia:5001", "device": "Nokia test connector", "token": None},
+    "ericsson": {"endpoint": "agent-ericsson:5004", "device": "Ericsson test connector", "token": None},
+    "openet": {"endpoint": "agent-openet:5005", "device": "Openet test connector", "token": None},
+}
+
+
+def _probe_agent(vendor: str, info: Dict) -> Dict:
+    checked_at = time.strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        with urlopen(f"http://{info['endpoint']}/openapi.json", timeout=3) as response:
+            status = "Connected" if 200 <= response.status < 300 else "Disconnected"
+            error = None
+    except OSError as exc:
+        status, error = "Disconnected", str(exc)
+    info.update({"status": status, "last_check": checked_at, "error": error})
+    set_gauge(
+        "agent_connected_devices",
+        1 if status == "Connected" else 0,
+        {
+            "agent": f"{vendor}-agent",
+            "device_id": info.get("device", "unassigned"),
+            "status": status.lower(),
+            "vendor": vendor,
+        },
+    )
+    return {"vendor": vendor, **info}
 
 @router.post("/api/agents/register")
 def register_agent(agent: dict = Body(...)):
@@ -18,15 +47,21 @@ def register_agent(agent: dict = Body(...)):
     agents_registry[vendor] = {
         "endpoint": endpoint,
         "token": token,
-        "status": "Online",
-        "last_sync": time.strftime("%Y-%m-%d %H:%M:%S")
+        "device": agent.get("device", "Unassigned device"),
+        "status": "Unknown",
+        "last_check": None,
+        "error": None,
     }
     return {"status": "registered", "vendor": vendor}
 
 @router.get("/api/agents/list")
 def list_agents():
-    # Return all registered agents
-    return [{"vendor": v, **info} for v, info in agents_registry.items()]
+    return [_probe_agent(vendor, info) for vendor, info in agents_registry.items()]
+
+
+@router.get("/api/agents/status")
+def agent_status():
+    return list_agents()
 
 @router.post("/api/agents/push")
 def push_to_agent(vendor: str = Body(...), config: str = Body(...)):
@@ -42,7 +77,7 @@ def push_to_agent(vendor: str = Body(...), config: str = Body(...)):
         if token:
             payload["token"] = token
         resp = requests.post(url, json=payload, timeout=10)
-        agent["last_sync"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        agent["last_check"] = time.strftime("%Y-%m-%d %H:%M:%S")
         if resp.ok:
             return resp.json()
         else:

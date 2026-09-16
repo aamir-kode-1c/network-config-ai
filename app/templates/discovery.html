@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Discovery - Network Control Center</title>
+    <link rel="stylesheet" href="/static/dashboard.css?v=20260913-discovery">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand"><span class="brand-mark">N</span><div><strong>Network Control Center</strong><small>Read-only network discovery</small></div></div>
+        <div class="topbar-actions"><a href="/dashboard">Dashboard</a><a href="/agents">Connectors</a><a href="/tests">Tests</a></div>
+    </header>
+    <main class="shell">
+        <section class="page-heading">
+            <div><p class="eyebrow">Inventory onboarding</p><h1>Discover devices</h1><p class="muted">Scan an approved private network range, review reachable devices, then add selected devices to inventory.</p></div>
+        </section>
+        <section class="panel">
+            <form id="discovery-form" class="workflow-form">
+                <label>Private CIDR range<input id="cidr" value="192.168.1.0/24" required></label>
+                <label>Ports<input id="ports" value="22,80,443,830" required></label>
+                <button class="primary" type="submit">Discover devices</button>
+            </form>
+            <p id="discovery-feedback" class="muted">Discovery is read-only and limited to private, loopback, or link-local ranges.</p>
+        </section>
+        <section class="panel">
+            <div class="panel-heading"><div><h2>Reachable devices</h2><p class="muted">Select devices to onboard. Vendor and product values can be adjusted before adding.</p></div><button class="secondary" id="add-selected" disabled>Add selected to inventory</button></div>
+            <div id="discovery-results" class="test-case-list"><div class="empty-state">No discovery results yet.</div></div>
+        </section>
+    </main>
+    <script src="/static/discovery.js?v=20260913"></script>
+</body>
+</html>

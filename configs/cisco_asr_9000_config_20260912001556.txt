@@ -1,0 +1,5 @@
+interface GigabitEthernet0/48
+  ip address 203.0.113.18 255.255.255.0
+  description 'grafana-clean-8'
+  no shutdown
+exit

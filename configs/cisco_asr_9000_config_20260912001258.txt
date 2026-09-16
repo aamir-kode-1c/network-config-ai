@@ -1,0 +1,5 @@
+interface GigabitEthernet0/11
+  ip address 192.0.2.11 255.255.255.0
+  description 'grafana-case-1'
+  no shutdown
+exit

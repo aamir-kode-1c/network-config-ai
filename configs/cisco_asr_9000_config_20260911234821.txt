@@ -1,0 +1,5 @@
+interface eth0
+  ip address 192.0.2.1 24
+  description 'ASR 9000 interface'
+  no shutdown
+exit

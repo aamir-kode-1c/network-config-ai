@@ -1,7 +1,27 @@
 {
-  "nokia": ["7750 SR", "7250 IXR", "SROS", "Nuage VNS"],
-  "ericsson": ["Router 6000", "MINI-LINK", "SSR 8000"],
-  "cisco": ["ASR 9000", "Catalyst 9000", "Nexus 7000"],
-  "openet": ["Policy Manager", "Charging Gateway"],
-  "huawei": ["NE40E", "AR G3", "CloudEngine S Series"]
+  "nokia": [
+    {"name": "7750 SR", "documentation_url": "https://documentation.nokia.com/sr/", "formats": ["cli", "json", "xml", "yang"], "payloads": {"json": {"interface": "eth0", "ip": "192.0.2.1", "subnet": "24", "admin_state": "up"}, "xml": {"interface": "eth0", "ip": "192.0.2.1", "subnet": "24"}, "yang": {"interface": "eth0", "ip": "192.0.2.1", "subnet": "24"}, "cli": {"interface": "eth0", "ip": "192.0.2.1", "subnet": "24"}}},
+    {"name": "7250 IXR", "documentation_url": "https://documentation.nokia.com/7250ixr/", "formats": ["cli", "json", "xml", "yang"], "payloads": {}},
+    {"name": "SROS", "documentation_url": "https://documentation.nokia.com/sr/", "formats": ["cli", "json", "xml", "yang"], "payloads": {}},
+    {"name": "Nuage VNS", "documentation_url": "https://documentation.nokia.com/nuage/", "formats": ["cli", "json", "xml", "yang"], "payloads": {}}
+  ],
+  "ericsson": [
+    {"name": "Router 6000", "documentation_url": "https://www.ericsson.com/en/portfolio/networks/transport/router-6000", "formats": ["cli", "json", "xml", "yang"], "payloads": {}},
+    {"name": "MINI-LINK", "documentation_url": "https://www.ericsson.com/en/portfolio/networks/transport/microwave", "formats": ["cli", "json", "xml", "yang"], "payloads": {}},
+    {"name": "SSR 8000", "documentation_url": "https://www.ericsson.com/en/portfolio/networks/transport", "formats": ["cli", "json", "xml", "yang"], "payloads": {}}
+  ],
+  "cisco": [
+    {"name": "ASR 9000", "documentation_url": "https://www.cisco.com/c/en/us/support/routers/asr-9000-series-aggregation-services-routers/series.html", "formats": ["cli", "json", "xml", "yang"], "payloads": {}},
+    {"name": "Catalyst 9000", "documentation_url": "https://www.cisco.com/c/en/us/products/switches/catalyst-9000.html", "formats": ["cli", "json", "xml", "yang"], "payloads": {}},
+    {"name": "Nexus 7000", "documentation_url": "https://www.cisco.com/c/en/us/products/switches/nexus-7000-series-switches/index.html", "formats": ["cli", "json", "xml", "yang"], "payloads": {}}
+  ],
+  "openet": [
+    {"name": "Policy Manager", "formats": ["cli", "json", "xml", "yang"], "payloads": {}},
+    {"name": "Charging Gateway", "formats": ["cli", "json", "xml", "yang"], "payloads": {}}
+  ],
+  "huawei": [
+    {"name": "NE40E", "documentation_url": "https://support.huawei.com/enterprise/en/routers/ne40e-pid-9859381", "formats": ["cli", "json", "xml", "yang"], "payloads": {}},
+    {"name": "AR G3", "documentation_url": "https://support.huawei.com/enterprise/en/routers/ar-series-pid-13806125", "formats": ["cli", "json", "xml", "yang"], "payloads": {}},
+    {"name": "CloudEngine S Series", "documentation_url": "https://support.huawei.com/enterprise/en/switches/cloudengine-s-series-pid-9857349", "formats": ["cli", "json", "xml", "yang"], "payloads": {}}
+  ]
 }

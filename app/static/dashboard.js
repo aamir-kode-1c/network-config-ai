@@ -3,6 +3,7 @@
 
 console.log("dashboard.js loaded");
 let vendorProducts = {};
+let managedInventory = {};
 let sbiDevices = {
     nokia: [
         { value: "nokia_7750sr_ssh", label: "Nokia 7750 SR (SSH/CLI)" },
@@ -31,6 +32,51 @@ function showLoading(selector, show) {
     document.querySelector(selector).style.display = show ? "block" : "none";
 }
 
+function refreshAgentConnections() {
+    const list = document.getElementById("connector-list");
+    list.innerHTML = '<div class="connector-loading">Checking agent connections...</div>';
+    fetch("/api/agents/status")
+        .then(response => response.json())
+        .then(agents => {
+            list.innerHTML = "";
+            agents.forEach(agent => {
+                const connected = agent.status === "Connected";
+                const card = document.createElement("div");
+                card.className = "connector-card";
+                card.innerHTML = `<strong>${agent.vendor}</strong><div class="connector-meta">${agent.device || "Device not assigned"}</div><div class="connector-status ${connected ? "connected" : "disconnected"}"><i class="connector-dot"></i>${agent.status}</div><div class="connector-meta">${agent.endpoint}</div>${agent.error ? `<div class="connector-error" title="${agent.error}">${agent.error}</div>` : `<div class="connector-meta">Checked ${agent.last_check || "now"}</div>`}`;
+                list.appendChild(card);
+            });
+        })
+        .catch(() => {
+            list.innerHTML = '<div class="connector-error">Unable to query agent status.</div>';
+        });
+}
+
+function refreshInventory() {
+    const list = document.getElementById("inventory-list");
+    fetch("/api/inventory/summary")
+        .then(response => response.json())
+        .then(data => {
+            managedInventory = Object.fromEntries(data.vendors.map(group => [group.vendor, group.devices]));
+            document.getElementById("inventory-total").textContent = `${data.total} devices`;
+            list.innerHTML = data.vendors.map(group => `
+                <details class="inventory-vendor">
+                    <summary><strong>${group.vendor}</strong><span>${group.count} devices</span></summary>
+                    <div class="inventory-devices">${group.devices.map(device => `<span title="${device.management_address}">${device.device_id}<small>${device.product}</small></span>`).join("")}</div>
+                </details>
+            `).join("");
+            const vendor = document.getElementById("vendor");
+            if (vendor && vendor.value) {
+                populateProducts(vendor.value);
+                populateInventoryDevices(vendor.value);
+                populateSbiDevices(vendor.value);
+            }
+        })
+        .catch(() => {
+            list.innerHTML = '<div class="connector-error">Unable to load managed inventory.</div>';
+        });
+}
+
 function showFeedback(selector, msg, isError = false) {
     const el = document.querySelector(selector);
     el.textContent = msg;
@@ -53,28 +99,75 @@ function populateVendors() {
         opt.textContent = vendor.charAt(0).toUpperCase() + vendor.slice(1);
         vendorSel.appendChild(opt);
     });
+
 }
 
 function populateProducts(vendor) {
     const productSel = document.getElementById("product");
     productSel.innerHTML = "";
-    (vendorProducts[vendor] || []).forEach(product => {
+    const catalogProducts = vendorProducts[vendor] || [];
+    const inventoryDevices = managedInventory[vendor] || [];
+    const inventoryProducts = new Set(inventoryDevices.map(device => device.product));
+    inventoryDevices.forEach(device => {
         const opt = document.createElement("option");
-        opt.value = product;
-        opt.textContent = product;
+        opt.value = device.product;
+        opt.textContent = `${device.product} - ${device.device_id}`;
         productSel.appendChild(opt);
+    });
+    catalogProducts
+        .filter(product => !inventoryProducts.has(product))
+        .forEach(product => {
+            const opt = document.createElement("option");
+            opt.value = product;
+            opt.textContent = `${product} (catalog)`;
+            productSel.appendChild(opt);
+        });
+}
+
+function populateInventoryDevices(vendor) {
+    const deviceSel = document.getElementById("inventory-device");
+    if (!deviceSel) return;
+    deviceSel.innerHTML = "";
+    const devices = managedInventory[vendor] || [];
+    if (!devices.length) {
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.textContent = "No registered inventory devices";
+        deviceSel.appendChild(empty);
+        return;
+    }
+    devices.forEach(device => {
+        const opt = document.createElement("option");
+        opt.value = device.device_id;
+        opt.textContent = `${device.device_id} - ${device.product} (${device.management_address})`;
+        deviceSel.appendChild(opt);
     });
 }
 
 function populateSbiDevices(vendor) {
     const sbiSel = document.getElementById("sbi-device");
     sbiSel.innerHTML = "";
+    const devices = managedInventory[vendor] || [];
+    if (devices.length) {
+        const inventoryGroup = document.createElement("optgroup");
+        inventoryGroup.label = `Managed ${vendor} devices (${devices.length})`;
+        devices.forEach(device => {
+            const opt = document.createElement("option");
+            opt.value = device.device_id;
+            opt.textContent = `${device.device_id} - ${device.product} (${device.management_address})`;
+            inventoryGroup.appendChild(opt);
+        });
+        sbiSel.appendChild(inventoryGroup);
+    }
+    const simulatorGroup = document.createElement("optgroup");
+    simulatorGroup.label = "Local simulator transports";
     (sbiDevices[vendor] || []).forEach(dev => {
         const opt = document.createElement("option");
         opt.value = dev.value;
         opt.textContent = dev.label;
-        sbiSel.appendChild(opt);
+        simulatorGroup.appendChild(opt);
     });
+    if (simulatorGroup.children.length) sbiSel.appendChild(simulatorGroup);
 }
 
 function fetchVendorProducts() {
@@ -128,6 +221,64 @@ function populateProducts(vendor) {
         productSel.appendChild(opt);
     });
     console.log("Product select populated. Current value:", productSel.value);
+    loadPayloadTemplate(vendor, productSel.value);
+}
+
+function loadPayloadTemplate(vendor, product) {
+    if (!vendor || !product) return;
+    fetch(`/api/vendor-products/${encodeURIComponent(vendor)}/${encodeURIComponent(product)}/payloads`)
+        .then(response => {
+            if (!response.ok) throw new Error("Payload templates unavailable");
+            return response.json();
+        })
+        .then(data => {
+            const format = document.getElementById("format").value;
+            const payload = data.payloads && data.payloads[format];
+            if (payload) {
+                document.getElementById("nb_payload").value = JSON.stringify(payload, null, 2);
+            }
+        })
+        .catch(error => console.warn("Unable to load payload template:", error));
+}
+
+function refreshOperationalSummary() {
+    Promise.all([
+        fetch("/health/ready").then(response => response.json()),
+        fetch("/metrics").then(response => response.text())
+    ]).then(([health, metrics]) => {
+        const values = {};
+        const metricTotal = (metricName, status) => {
+            const pattern = new RegExp("^" + metricName + "\\{[^}]*status=\"" + status + "\"[^}]*\\}\\s+([0-9.]+)", "gm");
+            return [...metrics.matchAll(pattern)].reduce((total, match) => total + Number(match[1]), 0);
+        };
+        metrics.split("\n").forEach(line => {
+            const match = line.match(/^([a-zA-Z0-9_]+)(?:\{[^}]*\})?\s+([0-9.]+)/);
+            if (match) values[match[1]] = Number(match[2]);
+        });
+        document.getElementById("control-plane").textContent = health.status === "ready" ? "Ready" : "Degraded";
+        document.getElementById("system-status").textContent = health.status === "ready" ? "Healthy" : "Degraded";
+        document.getElementById("system-status").className = "status-pill " + (health.status === "ready" ? "healthy" : "warning");
+        document.getElementById("queue-depth").textContent = values.change_queue_depth ?? 0;
+        document.getElementById("validation-failures").textContent = values.config_validation_failures_total ?? 0;
+        document.getElementById("tool-invocations").textContent = values.ai_tool_invocations_total ?? 0;
+        const successfulDeployments = metricTotal("production_change_deployments_total", "success") + metricTotal("simulated_deployments_total", "success");
+        const failedDeployments = metricTotal("production_change_deployments_total", "failure") + metricTotal("simulated_deployments_total", "failure");
+        const deployments = successfulDeployments + failedDeployments;
+        document.getElementById("deployment-success").textContent = deployments ? String(successfulDeployments) : "—";
+        const commits = values.configuration_commits_total ?? 0;
+        document.getElementById("deployment-detail").textContent = deployments ? `${successfulDeployments} successful / ${failedDeployments} failed` : (commits ? `${commits} candidate commit(s); not deployed` : "No deployments recorded");
+        const successfulTests = metricTotal("test_cases_total", "passed");
+        const failedTests = metricTotal("test_cases_total", "failed");
+        const tests = successfulTests + failedTests;
+        document.getElementById("test-success").textContent = tests ? String(successfulTests) : "—";
+        document.getElementById("test-detail").textContent = tests ? `${successfulTests} passed / ${failedTests} failed` : "No test runs recorded";
+        document.getElementById("fleet-health").textContent = health.status === "ready" ? "100%" : "At risk";
+        document.getElementById("fleet-detail").textContent = "Control plane availability";
+        document.getElementById("last-updated").textContent = new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+    }).catch(() => {
+        document.getElementById("system-status").textContent = "Unavailable";
+        document.getElementById("system-status").className = "status-pill warning";
+    });
 }
 
 
@@ -176,81 +327,34 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
     fetchVendorProducts();
+    refreshOperationalSummary();
+    document.getElementById("refresh-dashboard").addEventListener("click", refreshOperationalSummary);
+    refreshAgentConnections();
+    refreshInventory();
+    document.getElementById("refresh-agents").addEventListener("click", refreshAgentConnections);
 
     document.getElementById("vendor").addEventListener("change", function() {
         populateProducts(this.value);
+        populateInventoryDevices(this.value);
         populateSbiDevices(this.value);
-        document.getElementById("history-vendor").textContent = this.options[this.selectedIndex].text;
+        const historyVendor = document.getElementById("history-vendor");
+        if (historyVendor) historyVendor.textContent = this.options[this.selectedIndex].text;
+    });
+    document.getElementById("product").addEventListener("change", function() {
+        loadPayloadTemplate(document.getElementById("vendor").value, this.value);
+    });
+    document.getElementById("format").addEventListener("change", function() {
+        loadPayloadTemplate(document.getElementById("vendor").value, document.getElementById("product").value);
     });
 
-    document.getElementById("configForm").addEventListener("submit", function(e) {
-        e.preventDefault();
-        clearFeedback();
-        showLoading("#form-loading", true);
-
-        // Validate JSON
-        let nbPayload = document.getElementById("nb_payload").value;
-        try {
-            JSON.parse(nbPayload);
-        } catch (err) {
-            showFeedback("#form-feedback", "NB API Payload must be valid JSON.", true);
-            showLoading("#form-loading", false);
-            return;
-        }
-
-        // Submit form via fetch
-        const formData = new FormData(this);
-        fetch("/dashboard", {
-            method: "POST",
-            body: formData
-        })
-        .then(r => r.text())
-        .then(html => {
-            // Parse returned HTML for config and errors
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, "text/html");
-            const config = doc.querySelector("#generated-config");
-            const error = doc.querySelector(".feedback.error");
-            if (config) {
-                document.getElementById("generated-config").textContent = config.textContent;
-                document.getElementById("generated-config-block").style.display = "block";
-            } else {
-                document.getElementById("generated-config-block").style.display = "none";
-            }
-            if (error) {
-                showFeedback("#output-error", error.textContent, true);
-            } else {
-                showFeedback("#output-error", "");
-            }
-            showLoading("#form-loading", false);
-        })
-        .then(() => {
-            const config = document.getElementById('generated-config').innerText;
-            const vendor = document.getElementById('vendor').value;
-            const product = document.getElementById('product').value;
-            document.getElementById('test-simulator-btn').addEventListener('click', () => {
-                fetch('/api/test-simulator', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ config, vendor, product })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    showFeedback("#simulator-output", data.output);
-                })
-                .catch(e => {
-                    showFeedback("#simulator-output", 'Error', true);
-                });
-            });
-        })
-        .catch(() => {
-            showFeedback("#form-feedback", "Failed to generate config.", true);
-            showLoading("#form-loading", false);
-        });
-    });
-
-    document.getElementById("history-vendor").textContent = document.getElementById("vendor").options[0]?.text || "";
-    document.getElementById('sim-push-btn').addEventListener('click', pushToSimDevice);
+    const historyVendor = document.getElementById("history-vendor");
+    if (historyVendor) {
+        historyVendor.textContent = document.getElementById("vendor").options[0]?.text || "";
+    }
+    const simPushButton = document.getElementById('sim-push-btn');
+    if (simPushButton) {
+        simPushButton.addEventListener('click', pushToSimDevice);
+    }
     // Optionally, fetch and render config history here
 });
 
@@ -261,6 +365,10 @@ function pushToSimDevice() {
     clearFeedback();
     const config = document.getElementById('generated-config').innerText;
     const device = document.getElementById('sbi-device').value;
+    if (device.startsWith("lab-")) {
+        showFeedback("#sim-push-result", "Managed inventory targets must use the authenticated production workflow; select a local simulator transport for this action.", true);
+        return;
+    }
     document.getElementById('sim-push-status').innerText = 'Pushing...';
     document.getElementById('sim-push-result').style.display = 'none';
     document.getElementById('sim-push-result').innerText = '';

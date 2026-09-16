@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Runner - Network Control Center</title>
+    <link rel="stylesheet" href="/static/dashboard.css?v=20260913">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand"><span class="brand-mark">N</span><div><strong>Network Control Center</strong><small>Validation workspace</small></div></div>
+        <div class="topbar-actions"><a href="/dashboard">Dashboard</a><a href="/agents">Connectors</a><a href="http://localhost:3000/d/network-automation-changes/network-automation-changes?orgId=1&amp;from=now-24h&amp;to=now&amp;refresh=15s" target="_blank" rel="noopener noreferrer">Grafana</a></div>
+    </header>
+    <main class="shell">
+        <section class="page-heading">
+            <div><p class="eyebrow">Quality gates</p><h1>Test runner</h1><p class="muted">Run the repository test suite and the Cisco simulator RAG workflow from the browser.</p></div>
+            <div class="heading-actions"><button class="primary" id="run-tests">Run all tests</button></div>
+        </section>
+        <section class="panel test-summary">
+            <div><strong id="test-status">Ready to run</strong><span id="test-detail">Tests execute on the orchestrator container.</span></div>
+            <div class="test-spinner" id="test-spinner" hidden>Running...</div>
+        </section>
+        <section class="panel test-case-panel">
+            <div class="panel-heading"><div><h2>Individual test cases</h2><p class="muted">Execute one targeted test or inventory-device validation without running the complete suite.</p></div><span id="case-count" class="status-pill neutral">Loading...</span></div>
+            <div class="test-case-list" id="test-case-list"><div class="connector-loading">Loading test cases...</div></div>
+        </section>
+        <section class="test-results" id="test-results">
+            <div class="empty-state"><div class="empty-icon">✓</div><strong>No test run yet</strong><span>Click “Run all tests” to execute every automated test and the Cisco RAG push test.</span></div>
+        </section>
+    </main>
+    <script src="/static/test_runner.js?v=20260913-e2e-logs"></script>
+</body>
+</html>
